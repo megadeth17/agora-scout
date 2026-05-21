@@ -13,6 +13,9 @@ services:
       - ./data:/app/data
     environment:
       - DATABASE_PATH=/app/data/agora_scout.db
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   frontend:
     image: node:20-alpine
