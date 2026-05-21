@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: agora-scout-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/agora_scout.db
+
+  frontend:
+    image: node:20-alpine
+    container_name: agora-scout-frontend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3003:3003"
+    command: sh -c "npm install && npm run dev"
+    environment:
+      - BACKEND_HOST=backend
+    depends_on:
+      - backend
