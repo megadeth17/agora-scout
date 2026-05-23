@@ -15,10 +15,10 @@ CIRCLE_API_KEY = os.getenv("CIRCLE_API_KEY", "")
 CIRCLE_KIT_KEY = os.getenv("CIRCLE_KIT_KEY", "")
 CIRCLE_BASE_URL = "https://api.circle.com/v1/w3s"
 
-# Kimi K2 (OpenAI-compatible)
-KIMI_API_KEY = os.getenv("KIMI_API_KEY", "")
-KIMI_BASE_URL = "https://api.moonshot.cn/v1"
-KIMI_MODEL = "moonshot-v1-8k"
+# Kimi K2 (OpenAI-compatible — base_url must be .ai not .cn)
+KIMI_API_KEY = os.getenv("MOONSHOT_API_KEY", "") or os.getenv("KIMI_API_KEY", "")
+KIMI_BASE_URL = "https://api.moonshot.ai/v1"
+KIMI_MODEL = "kimi-k2.6"
 
 # Storage
 DATABASE_PATH = os.getenv("DATABASE_PATH", "agora_scout.db")

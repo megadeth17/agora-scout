@@ -67,6 +67,7 @@ class AgoraAgent:
             self._client = AsyncOpenAI(
                 api_key=config.KIMI_API_KEY,
                 base_url=config.KIMI_BASE_URL,
+                timeout=60.0,
             )
         return self._client
 
@@ -118,8 +119,9 @@ class AgoraAgent:
                 response = await client.chat.completions.create(
                     model=config.KIMI_MODEL,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=512,
+                    max_tokens=1500,
                     temperature=0.2,
+                    extra_body={"thinking": {"type": "disabled"}},
                 )
                 raw = response.choices[0].message.content.strip()
                 parsed = self._parse_decision(raw)
