@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     port: 3003,
     host: '0.0.0.0',
-    allowedHosts: 'all',
+    allowedHosts: true,
     proxy: {
       '/api': `http://${BACKEND_HOST}:8000`,
       '/ws': { target: `ws://${BACKEND_HOST}:8000`, ws: true },
