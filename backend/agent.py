@@ -120,7 +120,7 @@ class AgoraAgent:
                     model=config.KIMI_MODEL,
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=1500,
-                    temperature=0.2,
+                    temperature=0.6,
                     extra_body={"thinking": {"type": "disabled"}},
                 )
                 raw = response.choices[0].message.content.strip()
