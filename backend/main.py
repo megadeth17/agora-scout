@@ -5,10 +5,12 @@ Runs the AI agent loop in background and serves REST + WebSocket API.
 import asyncio
 import json
 import logging
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 import config
 import database as db
@@ -25,6 +27,28 @@ logger = logging.getLogger("main")
 ws_clients: list[WebSocket] = []
 agent = AgoraAgent()
 executor = CircleExecutor()
+
+# Rate limiting: per-IP cooldown for /api/trigger (seconds)
+TRIGGER_COOLDOWN = 60  # 1 call per IP per minute
+_trigger_last: dict[str, float] = {}
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_rate_limit(ip: str) -> tuple[bool, int]:
+    """Returns (allowed, retry_after_seconds)."""
+    now = time.monotonic()
+    last = _trigger_last.get(ip, 0)
+    elapsed = now - last
+    if elapsed < TRIGGER_COOLDOWN:
+        return False, int(TRIGGER_COOLDOWN - elapsed)
+    _trigger_last[ip] = now
+    return True, 0
 
 
 async def broadcast(payload: dict) -> None:
@@ -156,8 +180,17 @@ async def stats() -> dict:
 
 
 @app.post("/api/trigger")
-async def trigger_cycle() -> dict:
+async def trigger_cycle(request: Request) -> dict:
     """Manually trigger an agent cycle (for demo/traction purposes)."""
+    ip = _get_client_ip(request)
+    allowed, retry_after = _check_rate_limit(ip)
+    if not allowed:
+        return JSONResponse(
+            status_code=429,
+            content={"error": "Too many requests", "retry_after_seconds": retry_after},
+            headers={"Retry-After": str(retry_after)},
+        )
+
     decision = await agent.run_cycle()
     current = await db.get_portfolio_state()
     rebalance = None
