@@ -8,7 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Arc
-ARC_RPC_URL = os.getenv("ARC_RPC", "")
+ARC_RPC_URL = os.getenv("ARC_RPC", "") or "https://rpc.testnet.arc.network"
+ARC_CHAIN_ID = 5042002
+ARC_PRIVATE_KEY = os.getenv("ARC_PRIVATE_KEY", "")
+ARCSCAN_TX_BASE = "https://testnet.arcscan.app/tx"
 
 # Circle
 CIRCLE_API_KEY = os.getenv("CIRCLE_API_KEY", "")

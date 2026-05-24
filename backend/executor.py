@@ -12,6 +12,7 @@ import aiohttp
 
 import config
 import database as db
+from chain import ArcAnchor
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class CircleExecutor:
         }
         self._wallet_id: str | None = None
         self._simulated_balance = config.DEFAULT_USDC_AMOUNT
+        self._anchor = ArcAnchor()
 
     async def get_or_create_wallet(self) -> str | None:
         """Get existing wallet or create one via Circle Wallets API."""
@@ -124,11 +126,30 @@ class CircleExecutor:
 
         logger.info("Executing rebalance: %s → %s (regime=%s)", from_alloc, to_alloc, regime)
 
-        # Simulate transaction (realistic async delay)
-        await asyncio.sleep(2)
-        tx_hash = "0x" + uuid.uuid4().hex  # simulated tx hash
+        # Commit-then-act: anchor the decision on Arc BEFORE moving capital.
+        # The hash proves the decision existed on-chain prior to execution.
+        anchor_payload = {
+            "regime": regime,
+            "confidence": target.get("confidence"),
+            "reasoning": target.get("reasoning", ""),
+            "from": from_alloc,
+            "to": to_alloc,
+            "decided_at": target.get("decided_at") or datetime.now(timezone.utc).isoformat(),
+        }
+        anchor = await self._anchor.anchor(anchor_payload)
 
-        # Update portfolio state in DB
+        if anchor:
+            tx_hash = anchor["tx_hash"]
+            decision_hash = anchor["decision_hash"]
+            anchored = True
+        else:
+            # Fallback when no key/RPC: simulated hash, flagged as not anchored.
+            await asyncio.sleep(1)
+            tx_hash = "0x" + uuid.uuid4().hex
+            decision_hash = ArcAnchor.hash_decision(anchor_payload)
+            anchored = False
+
+        # Update portfolio state in DB (act, after the on-chain commit)
         new_state = {
             "usdc_pct": to_alloc["usdc_pct"],
             "usyc_pct": to_alloc["usyc_pct"],
@@ -145,12 +166,17 @@ class CircleExecutor:
             "trigger_regime": regime,
             "status": "executed",
             "tx_hash": tx_hash,
+            "decision_hash": decision_hash,
+            "anchored": 1 if anchored else 0,
         })
 
-        logger.info("Rebalance %d executed: tx=%s", rebalance_id, tx_hash)
+        logger.info("Rebalance %d executed: tx=%s anchored=%s", rebalance_id, tx_hash, anchored)
         return {
             "id": rebalance_id,
             "tx_hash": tx_hash,
+            "decision_hash": decision_hash,
+            "anchored": anchored,
+            "arcscan_url": anchor["arcscan_url"] if anchor else None,
             "from_allocation": from_alloc,
             "to_allocation": to_alloc,
             "status": "executed",

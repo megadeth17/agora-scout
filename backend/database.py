@@ -44,9 +44,17 @@ CREATE TABLE IF NOT EXISTS rebalances (
     trigger_regime TEXT,
     status TEXT DEFAULT 'pending',
     tx_hash TEXT,
+    decision_hash TEXT,
+    anchored INTEGER DEFAULT 0,
     executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """
+
+# Idempotent column additions for pre-existing rebalances tables
+REBALANCE_MIGRATIONS = [
+    "ALTER TABLE rebalances ADD COLUMN decision_hash TEXT",
+    "ALTER TABLE rebalances ADD COLUMN anchored INTEGER DEFAULT 0",
+]
 
 CREATE_VISITORS = """
 CREATE TABLE IF NOT EXISTS visitors (
@@ -65,6 +73,12 @@ async def init_db() -> None:
         await db.execute(CREATE_REGIME_DECISIONS)
         await db.execute(CREATE_REBALANCES)
         await db.execute(CREATE_VISITORS)
+        # Apply idempotent migrations (ignore "duplicate column" on existing DBs)
+        for migration in REBALANCE_MIGRATIONS:
+            try:
+                await db.execute(migration)
+            except Exception:
+                pass
         # Seed initial portfolio state if empty
         cursor = await db.execute("SELECT COUNT(*) FROM portfolio_state")
         count = (await cursor.fetchone())[0]
@@ -126,14 +140,18 @@ async def get_regime_decisions(limit: int = 50) -> list:
 async def save_rebalance(rebalance: dict) -> int:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         cursor = await db.execute(
-            """INSERT INTO rebalances (from_allocation, to_allocation, trigger_regime, status, tx_hash, executed_at)
-               VALUES (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :executed_at)""",
+            """INSERT INTO rebalances
+               (from_allocation, to_allocation, trigger_regime, status, tx_hash, decision_hash, anchored, executed_at)
+               VALUES
+               (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :decision_hash, :anchored, :executed_at)""",
             {
                 "from_allocation": json.dumps(rebalance.get("from_allocation", {})),
                 "to_allocation": json.dumps(rebalance.get("to_allocation", {})),
                 "trigger_regime": rebalance.get("trigger_regime", ""),
                 "status": rebalance.get("status", "pending"),
                 "tx_hash": rebalance.get("tx_hash", ""),
+                "decision_hash": rebalance.get("decision_hash", ""),
+                "anchored": rebalance.get("anchored", 0),
                 "executed_at": datetime.utcnow().isoformat(),
             },
         )
@@ -148,6 +166,7 @@ async def get_rebalances(limit: int = 20) -> list:
             "SELECT * FROM rebalances ORDER BY executed_at DESC LIMIT ?", (limit,)
         )
         rows = await cursor.fetchall()
+        from config import ARCSCAN_TX_BASE
         result = []
         for r in rows:
             d = dict(r)
@@ -157,6 +176,11 @@ async def get_rebalances(limit: int = 20) -> list:
                         d[key] = json.loads(d[key])
                     except (json.JSONDecodeError, TypeError):
                         d[key] = {}
+            # Only real anchored txs get a verifiable Arcscan link
+            if d.get("anchored") and d.get("tx_hash"):
+                d["arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['tx_hash']}"
+            else:
+                d["arcscan_url"] = None
             result.append(d)
         return result
 
@@ -194,6 +218,9 @@ async def get_traction() -> dict:
         cursor = await db.execute("SELECT COUNT(*) FROM rebalances")
         total_rebalances = (await cursor.fetchone())[0]
 
+        cursor = await db.execute("SELECT COUNT(*) FROM rebalances WHERE anchored = 1")
+        onchain_anchored = (await cursor.fetchone())[0]
+
         cursor = await db.execute(
             "SELECT COUNT(*) FROM visitors WHERE path = '/api/trigger'"
         )
@@ -206,6 +233,7 @@ async def get_traction() -> dict:
         "unique_today": unique_today,
         "total_decisions": total_decisions,
         "total_rebalances": total_rebalances,
+        "onchain_anchored": onchain_anchored,
         "total_manual_triggers": total_triggers,
     }
 

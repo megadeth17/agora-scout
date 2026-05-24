@@ -52,6 +52,11 @@ function TractionFooter() {
       <span>
         {traction.total_decisions} decisions · {traction.total_rebalances} rebalances
       </span>
+      {traction.onchain_anchored > 0 && (
+        <span style={{ color: 'var(--bull)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {traction.onchain_anchored} anchored on Arc
+        </span>
+      )}
       <span style={{ color: 'var(--orange)', fontWeight: 600 }}>
         Agora Agents Hackathon 2026
       </span>
@@ -188,15 +193,37 @@ function RebalanceRow({ rebalance, index }) {
         </div>
       ))}
 
-      {/* Status */}
-      <span style={{
-        fontSize: 9,
-        color: rebalance.status === 'executed' ? 'var(--bull)' : 'var(--sideways)',
-        fontFamily: 'var(--font-mono)',
-        textAlign: 'right',
-      }}>
-        {rebalance.status}
-      </span>
+      {/* Status / on-chain proof */}
+      {rebalance.arcscan_url ? (
+        <a
+          href={rebalance.arcscan_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Decision anchored on Arc — ${rebalance.tx_hash}`}
+          style={{
+            fontSize: 9,
+            color: 'var(--bull)',
+            fontFamily: 'var(--font-mono)',
+            textAlign: 'right',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 3,
+            justifyContent: 'flex-end',
+            textDecoration: 'none',
+          }}
+        >
+          verified <ArrowLeftRight size={8} strokeWidth={2} style={{ transform: 'rotate(45deg)' }} />
+        </a>
+      ) : (
+        <span style={{
+          fontSize: 9,
+          color: rebalance.status === 'executed' ? 'var(--text-secondary)' : 'var(--sideways)',
+          fontFamily: 'var(--font-mono)',
+          textAlign: 'right',
+        }}>
+          {rebalance.status}
+        </span>
+      )}
 
       {/* Time */}
       <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', textAlign: 'right', whiteSpace: 'nowrap' }}>
