@@ -152,6 +152,19 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def track_visitors(request: Request, call_next):
+    """Track page views and API usage for traction metrics."""
+    response = await call_next(request)
+    # Track meaningful paths only (not health checks or static)
+    path = request.url.path
+    if path in ("/api/portfolio", "/api/decisions", "/api/stats", "/api/trigger"):
+        ip = _get_client_ip(request)
+        ua = request.headers.get("User-Agent", "")[:200]
+        asyncio.create_task(db.record_visit(ip, path, ua))
+    return response
+
+
 # ── REST API ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/portfolio")
@@ -177,6 +190,21 @@ async def list_rebalances(limit: int = 20) -> dict:
 @app.get("/api/stats")
 async def stats() -> dict:
     return await db.get_stats()
+
+
+@app.get("/api/timeline")
+async def timeline(limit: int = 100) -> dict:
+    """Decision timeline for performance chart."""
+    decisions = await db.get_regime_decisions(limit=limit)
+    # Return chronological order (oldest first) for charting
+    decisions.reverse()
+    return {"timeline": decisions, "count": len(decisions)}
+
+
+@app.get("/api/traction")
+async def traction() -> dict:
+    """Public traction metrics for hackathon judges."""
+    return await db.get_traction()
 
 
 @app.post("/api/trigger")

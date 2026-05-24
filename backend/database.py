@@ -48,12 +48,23 @@ CREATE TABLE IF NOT EXISTS rebalances (
 )
 """
 
+CREATE_VISITORS = """
+CREATE TABLE IF NOT EXISTS visitors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT NOT NULL,
+    path TEXT NOT NULL DEFAULT '/',
+    user_agent TEXT,
+    visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 
 async def init_db() -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute(CREATE_PORTFOLIO_STATE)
         await db.execute(CREATE_REGIME_DECISIONS)
         await db.execute(CREATE_REBALANCES)
+        await db.execute(CREATE_VISITORS)
         # Seed initial portfolio state if empty
         cursor = await db.execute("SELECT COUNT(*) FROM portfolio_state")
         count = (await cursor.fetchone())[0]
@@ -148,6 +159,55 @@ async def get_rebalances(limit: int = 20) -> list:
                         d[key] = {}
             result.append(d)
         return result
+
+
+async def record_visit(ip: str, path: str = "/", user_agent: str = "") -> None:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute(
+            "INSERT INTO visitors (ip, path, user_agent, visited_at) VALUES (?, ?, ?, ?)",
+            (ip, path, user_agent, datetime.utcnow().isoformat()),
+        )
+        await db.commit()
+
+
+async def get_traction() -> dict:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        cursor = await db.execute("SELECT COUNT(*) FROM visitors")
+        total_views = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(DISTINCT ip) FROM visitors")
+        unique_visitors = (await cursor.fetchone())[0]
+
+        cursor = await db.execute(
+            "SELECT COUNT(*) FROM visitors WHERE visited_at >= datetime('now', '-24 hours')"
+        )
+        views_today = (await cursor.fetchone())[0]
+
+        cursor = await db.execute(
+            "SELECT COUNT(DISTINCT ip) FROM visitors WHERE visited_at >= datetime('now', '-24 hours')"
+        )
+        unique_today = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM regime_decisions")
+        total_decisions = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM rebalances")
+        total_rebalances = (await cursor.fetchone())[0]
+
+        cursor = await db.execute(
+            "SELECT COUNT(*) FROM visitors WHERE path = '/api/trigger'"
+        )
+        total_triggers = (await cursor.fetchone())[0]
+
+    return {
+        "total_page_views": total_views,
+        "unique_visitors": unique_visitors,
+        "views_today": views_today,
+        "unique_today": unique_today,
+        "total_decisions": total_decisions,
+        "total_rebalances": total_rebalances,
+        "total_manual_triggers": total_triggers,
+    }
 
 
 async def get_stats() -> dict:

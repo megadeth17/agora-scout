@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, AlertTriangle, RefreshCw, Zap, BarChart2, ArrowLeftRight, Clock, TrendingUp } from 'lucide-react';
+import { Bot, AlertTriangle, RefreshCw, Zap, BarChart2, ArrowLeftRight, Clock, TrendingUp, Users, Eye } from 'lucide-react';
 import axios from 'axios';
 import './styles/globals.css';
 import { usePortfolioData } from './hooks/usePortfolioData';
@@ -7,8 +7,57 @@ import { AllocationChart } from './components/AllocationChart';
 import { RegimeIndicator } from './components/RegimeIndicator';
 import { DecisionCard } from './components/DecisionCard';
 import { DecisionFeed } from './components/DecisionFeed';
+import { DecisionTimeline } from './components/DecisionTimeline';
 
 const API = import.meta.env.VITE_API_URL || '';
+
+/* ── Traction footer ──────────────────────────────────────────────────────── */
+function TractionFooter() {
+  const [traction, setTraction] = React.useState(null);
+
+  React.useEffect(() => {
+    const fetch = () => {
+      axios.get(`${API}/api/traction`)
+        .then(r => setTraction(r.data))
+        .catch(() => {});
+    };
+    fetch();
+    const id = setInterval(fetch, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!traction) return null;
+  return (
+    <footer style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 20,
+      padding: '6px 24px',
+      borderTop: '1px solid var(--border-dim)',
+      background: 'var(--bg-secondary)',
+      fontSize: 9,
+      color: 'var(--text-dim)',
+      fontFamily: 'var(--font-mono)',
+      flexShrink: 0,
+    }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Users size={10} strokeWidth={1.5} />
+        {traction.unique_visitors} visitors
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Eye size={10} strokeWidth={1.5} />
+        {traction.total_page_views} views
+      </span>
+      <span>
+        {traction.total_decisions} decisions · {traction.total_rebalances} rebalances
+      </span>
+      <span style={{ color: 'var(--orange)', fontWeight: 600 }}>
+        Agora Agents Hackathon 2026
+      </span>
+    </footer>
+  );
+}
 
 /* ── Stat pill ─────────────────────────────────────────────────────────────── */
 function StatPill({ label, value, color = 'var(--blue-bright)', icon: Icon }) {
@@ -411,7 +460,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Row 2: Latest decision card */}
+              {/* Row 2: Decision timeline chart */}
+              <div style={{ flexShrink: 0 }}>
+                <DecisionTimeline />
+              </div>
+
+              {/* Row 3: Latest decision card */}
               {latestDecision && (
                 <div style={{ flexShrink: 0 }}>
                   <DecisionCard decision={latestDecision} isLatest />
@@ -528,6 +582,9 @@ export default function App() {
           </aside>
         )}
       </div>
+
+      {/* Traction footer */}
+      <TractionFooter />
 
       {/* Spin animation */}
       <style>{`
