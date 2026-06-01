@@ -135,6 +135,59 @@ function SkeletonCard() {
   );
 }
 
+/* ── On-chain proof verifier ───────────────────────────────────────────────── */
+function VerifyButton({ rebalanceId }) {
+  const [status, setStatus] = useState('idle'); // idle | loading | ok | fail
+  const [detail, setDetail] = useState(null);
+
+  const verify = async (e) => {
+    e?.stopPropagation?.();
+    setStatus('loading');
+    try {
+      const r = await axios.get(`${API}/api/verify/${rebalanceId}`);
+      setDetail(r.data);
+      setStatus(r.data.verified ? 'ok' : 'fail');
+    } catch {
+      setStatus('fail');
+    }
+  };
+
+  const color = status === 'ok' ? 'var(--bull)' : status === 'fail' ? 'var(--bear)' : 'var(--text-dim)';
+  const label =
+    status === 'loading' ? 'verifying…' :
+    status === 'ok'      ? '✓ verified' :
+    status === 'fail'    ? '✗ failed'   : 'verify';
+
+  const title = detail
+    ? `payload→hash: ${detail.payload_matches_hash === null ? 'n/a' : detail.payload_matches_hash}\n`
+      + `hash→on-chain: ${detail.hash_matches_chain === null ? 'n/a' : detail.hash_matches_chain}\n`
+      + `recomputed: ${detail.recomputed_hash ?? '—'}\n`
+      + `on-chain calldata: ${detail.onchain_calldata ?? '—'}`
+    : 'Recompute the SHA-256 of the stored decision and match it against the on-chain Arc calldata';
+
+  return (
+    <button
+      onClick={verify}
+      disabled={status === 'loading'}
+      title={title}
+      style={{
+        fontSize: 9,
+        fontFamily: 'var(--font-mono)',
+        color,
+        background: 'transparent',
+        border: `1px solid ${color}40`,
+        borderRadius: 3,
+        padding: '2px 6px',
+        cursor: status === 'loading' ? 'wait' : 'pointer',
+        whiteSpace: 'nowrap',
+        transition: 'all var(--transition)',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 /* ── Rebalance row ─────────────────────────────────────────────────────────── */
 function RebalanceRow({ rebalance, index }) {
   const from = rebalance.from_allocation ?? {};
@@ -151,7 +204,7 @@ function RebalanceRow({ rebalance, index }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '64px 1fr 1fr 1fr auto auto',
+      gridTemplateColumns: '64px 1fr 1fr 1fr auto auto auto',
       alignItems: 'center',
       gap: 10,
       padding: '10px 16px',
@@ -224,6 +277,13 @@ function RebalanceRow({ rebalance, index }) {
           {rebalance.status}
         </span>
       )}
+
+      {/* Independent on-chain verification (anchored rows only) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        {rebalance.arcscan_url && rebalance.id != null
+          ? <VerifyButton rebalanceId={rebalance.id} />
+          : null}
+      </div>
 
       {/* Time */}
       <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', textAlign: 'right', whiteSpace: 'nowrap' }}>

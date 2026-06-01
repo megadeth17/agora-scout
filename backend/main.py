@@ -16,6 +16,7 @@ import config
 import database as db
 from agent import AgoraAgent
 from executor import CircleExecutor
+from chain import ArcAnchor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +28,7 @@ logger = logging.getLogger("main")
 ws_clients: list[WebSocket] = []
 agent = AgoraAgent()
 executor = CircleExecutor()
+verifier = ArcAnchor()  # read-only use: recompute hashes + fetch on-chain calldata
 
 # Rate limiting: per-IP cooldown for /api/trigger (seconds)
 TRIGGER_COOLDOWN = 60  # 1 call per IP per minute
@@ -205,6 +207,68 @@ async def timeline(limit: int = 100) -> dict:
 async def traction() -> dict:
     """Public traction metrics for hackathon judges."""
     return await db.get_traction()
+
+
+@app.get("/api/verify/{rebalance_id}")
+async def verify_decision(rebalance_id: int) -> dict:
+    """
+    Independently verify a rebalance's commit-then-act proof end-to-end:
+        stored payload → sha256 → on-chain calldata.
+
+    Read-only: touches only our DB and a read-only Arc RPC call
+    (eth_getTransactionByHash). No writes, no signing, no capital movement.
+    `rebalance_id` is path-typed as int — non-integer input is rejected (422).
+    """
+    row = await db.get_rebalance_by_id(rebalance_id)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "rebalance not found"})
+
+    stored_hash = row.get("decision_hash") or None
+    payload = row.get("decision_payload") or None
+    tx_hash = row.get("tx_hash") or None
+    anchored = bool(row.get("anchored"))
+
+    result = {
+        "rebalance_id": rebalance_id,
+        "anchored": anchored,
+        "tx_hash": tx_hash,
+        "arcscan_url": f"{config.ARCSCAN_TX_BASE}/{tx_hash}" if (anchored and tx_hash) else None,
+        "stored_hash": stored_hash,
+        "recomputed_hash": None,
+        "onchain_calldata": None,
+        "payload_matches_hash": None,   # Level 2: payload → hash
+        "hash_matches_chain": None,     # Level 1: hash → on-chain calldata
+        "verified": False,
+    }
+
+    # Level 2 — recompute the sha256 from the stored canonical payload.
+    if payload:
+        recomputed = ArcAnchor.hash_canonical(payload)
+        result["recomputed_hash"] = recomputed
+        result["payload_matches_hash"] = (
+            bool(stored_hash) and recomputed.lower() == stored_hash.lower()
+        )
+
+    # Level 1 — compare the stored hash against the real on-chain calldata.
+    if anchored and tx_hash:
+        calldata = await verifier.fetch_onchain_calldata(tx_hash)
+        result["onchain_calldata"] = calldata
+        if calldata and stored_hash:
+            result["hash_matches_chain"] = calldata.lower() == stored_hash.lower()
+
+    # Verdict: anchored rows need the on-chain match (Level 1); if a payload is
+    # present it must also reproduce the hash (Level 2). Legacy rows without a
+    # stored payload verify on Level 1 alone. Simulated (un-anchored) rows can
+    # only prove internal consistency (Level 2).
+    if anchored:
+        result["verified"] = (
+            result["hash_matches_chain"] is True
+            and result["payload_matches_hash"] is not False
+        )
+    else:
+        result["verified"] = result["payload_matches_hash"] is True
+
+    return result
 
 
 @app.post("/api/trigger")

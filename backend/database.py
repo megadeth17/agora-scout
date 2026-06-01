@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS rebalances (
 REBALANCE_MIGRATIONS = [
     "ALTER TABLE rebalances ADD COLUMN decision_hash TEXT",
     "ALTER TABLE rebalances ADD COLUMN anchored INTEGER DEFAULT 0",
+    "ALTER TABLE rebalances ADD COLUMN decision_payload TEXT",
 ]
 
 CREATE_VISITORS = """
@@ -141,9 +142,9 @@ async def save_rebalance(rebalance: dict) -> int:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         cursor = await db.execute(
             """INSERT INTO rebalances
-               (from_allocation, to_allocation, trigger_regime, status, tx_hash, decision_hash, anchored, executed_at)
+               (from_allocation, to_allocation, trigger_regime, status, tx_hash, decision_hash, decision_payload, anchored, executed_at)
                VALUES
-               (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :decision_hash, :anchored, :executed_at)""",
+               (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :decision_hash, :decision_payload, :anchored, :executed_at)""",
             {
                 "from_allocation": json.dumps(rebalance.get("from_allocation", {})),
                 "to_allocation": json.dumps(rebalance.get("to_allocation", {})),
@@ -151,6 +152,7 @@ async def save_rebalance(rebalance: dict) -> int:
                 "status": rebalance.get("status", "pending"),
                 "tx_hash": rebalance.get("tx_hash", ""),
                 "decision_hash": rebalance.get("decision_hash", ""),
+                "decision_payload": rebalance.get("decision_payload", ""),
                 "anchored": rebalance.get("anchored", 0),
                 "executed_at": datetime.utcnow().isoformat(),
             },
@@ -181,8 +183,20 @@ async def get_rebalances(limit: int = 20) -> list:
                 d["arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['tx_hash']}"
             else:
                 d["arcscan_url"] = None
+            # Keep the list response lean — full payload is served by /api/verify
+            d.pop("decision_payload", None)
             result.append(d)
         return result
+
+
+async def get_rebalance_by_id(rebalance_id: int) -> dict | None:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM rebalances WHERE id = ?", (rebalance_id,)
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None
 
 
 async def record_visit(ip: str, path: str = "/", user_agent: str = "") -> None:

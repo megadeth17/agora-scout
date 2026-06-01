@@ -45,10 +45,49 @@ class ArcAnchor:
         return self._w3
 
     @staticmethod
+    def canonical_payload(payload: dict) -> str:
+        """Deterministic canonical JSON serialization — the exact bytes that get hashed."""
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+    @staticmethod
+    def hash_canonical(canonical: str) -> str:
+        """sha256 of an already-canonical string → 0x-prefixed 32-byte hex."""
+        return "0x" + hashlib.sha256(canonical.encode()).hexdigest()
+
+    @staticmethod
     def hash_decision(payload: dict) -> str:
         """Deterministic sha256 of the decision payload → 0x-prefixed 32-byte hex."""
-        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        return "0x" + hashlib.sha256(canonical.encode()).hexdigest()
+        return ArcAnchor.hash_canonical(ArcAnchor.canonical_payload(payload))
+
+    @staticmethod
+    def _read_w3():
+        """Key-free read-only web3 client (verification needs no signing account)."""
+        from web3 import Web3
+        return Web3(Web3.HTTPProvider(
+            config.ARC_RPC_URL, request_kwargs={"timeout": 15}
+        ))
+
+    def _fetch_calldata_sync(self, tx_hash: str) -> str | None:
+        w3 = self._read_w3()
+        if not w3.is_connected():
+            logger.error("Arc RPC not reachable at %s", config.ARC_RPC_URL)
+            return None
+        tx = w3.eth.get_transaction(tx_hash)
+        data = tx.get("input")
+        if data is None:
+            return None
+        if isinstance(data, (bytes, bytearray)):
+            return "0x" + data.hex()
+        s = str(data)
+        return s if s.startswith("0x") else "0x" + s
+
+    async def fetch_onchain_calldata(self, tx_hash: str) -> str | None:
+        """Read-only: fetch the calldata (input) of an anchored tx from Arc. No signing."""
+        try:
+            return await asyncio.to_thread(self._fetch_calldata_sync, tx_hash)
+        except Exception as exc:
+            logger.error("Arc calldata fetch failed: %s", exc)
+            return None
 
     def _anchor_sync(self, decision_hash: str) -> str | None:
         w3 = self._connect()

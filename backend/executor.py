@@ -136,6 +136,9 @@ class CircleExecutor:
             "to": to_alloc,
             "decided_at": target.get("decided_at") or datetime.now(timezone.utc).isoformat(),
         }
+        # Persist the exact bytes that get hashed, so the proof can be
+        # independently recomputed later (payload → sha256 → on-chain calldata).
+        canonical_payload = ArcAnchor.canonical_payload(anchor_payload)
         anchor = await self._anchor.anchor(anchor_payload)
 
         if anchor:
@@ -167,6 +170,7 @@ class CircleExecutor:
             "status": "executed",
             "tx_hash": tx_hash,
             "decision_hash": decision_hash,
+            "decision_payload": canonical_payload,
             "anchored": 1 if anchored else 0,
         })
 
