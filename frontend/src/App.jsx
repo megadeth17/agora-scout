@@ -494,7 +494,8 @@ export default function App() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
+          overflowY: 'auto',
+          minHeight: 0,
           padding: '18px 20px',
           gap: 16,
         }}>
@@ -559,8 +560,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* Row 3: Rebalance history */}
-              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              {/* Row 3: Rebalance history — grows with content; the whole center column scrolls */}
+              <div style={{ flexShrink: 0 }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
