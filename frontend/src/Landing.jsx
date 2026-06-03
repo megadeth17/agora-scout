@@ -123,6 +123,13 @@ function TrustDemo() {
       {state === 'none' && (
         <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>No on-chain decision to check yet — the agent logs one each time it moves money.</div>
       )}
+
+      <Link to="/proof" style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+        fontSize: 13, color: 'var(--cyan)', fontFamily: 'var(--font-display)', fontWeight: 600,
+      }}>
+        See how the proof works, and check more <ArrowRight size={14} />
+      </Link>
     </div>
   );
 }
