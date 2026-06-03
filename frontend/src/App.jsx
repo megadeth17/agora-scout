@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Bot, AlertTriangle, RefreshCw, Zap, BarChart2, ArrowLeftRight, Clock, TrendingUp, Users, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bot, AlertTriangle, RefreshCw, Zap, BarChart2, ArrowLeftRight, Clock, TrendingUp, Users, Eye, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import './styles/globals.css';
 import { usePortfolioData } from './hooks/usePortfolioData';
@@ -434,6 +435,14 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Simple view link — for non-crypto visitors */}
+        <Link to="/" title="New here? Start with the simple view" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0,
+          fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-display)', fontWeight: 600,
+        }}>
+          <Sparkles size={12} strokeWidth={1.8} /> Simple view
+        </Link>
 
         {/* Divider */}
         <div style={{ width: 1, height: 28, background: 'var(--border-subtle)', flexShrink: 0 }} />
