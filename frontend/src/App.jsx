@@ -405,15 +405,13 @@ export default function App() {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{
-            width: 32, height: 32,
-            borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--orange-dim), var(--blue-dim))',
-            border: '1px solid var(--border-subtle)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Bot size={17} color="var(--orange)" strokeWidth={1.8} />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Agora Scout"
+            width={36}
+            height={36}
+            style={{ display: 'block', filter: 'drop-shadow(0 0 12px rgba(252, 122, 0, 0.28))' }}
+          />
           <div>
             <div style={{
               fontFamily: 'var(--font-display)',
