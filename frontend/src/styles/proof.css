@@ -1,0 +1,182 @@
+/* Agora Scout — proof page visual system (ported from Claude Design).
+   Scoped to .agora-proof. */
+
+.agora-proof{
+  --bg:#060A12; --bg-2:#080D18; --surface:#0D1424; --surface-2:#111A2E;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --text:#EAEEF7; --muted:#9AA4B8; --faint:#646E84;
+  --orange:#FF7A1A; --gold:#FFC24A; --cyan:#3BD3E0; --cyan-dim:rgba(59,211,224,.13);
+  --red:#FF6A5A; --cash:#4F8EF7; --tbill:#34D399; --yield:#A78BFA;
+  --grad:linear-gradient(100deg,#FF6A00 0%,#FF9A14 48%,#FFC53D 100%);
+  --grad-soft:linear-gradient(100deg,rgba(255,106,0,.18),rgba(255,197,61,.12));
+  --maxw:1200px; --ease:cubic-bezier(.22,.61,.36,1);
+  background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',system-ui,sans-serif;
+  line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;
+}
+.agora-proof .mono{font-family:'IBM Plex Mono',monospace}
+.agora-proof a{color:inherit;text-decoration:none}
+.agora-proof button{font-family:inherit;cursor:pointer;color:inherit}
+
+.agora-proof .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.agora-proof .bg-fx .grid{position:absolute;inset:-2px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 90% 55% at 50% 0%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse 90% 55% at 50% 0%,#000 0%,transparent 70%);opacity:.5}
+.agora-proof .bg-fx .glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.5}
+.agora-proof .bg-fx .glow.a{top:-240px;left:46%;width:640px;height:520px;transform:translateX(-50%);background:radial-gradient(circle,rgba(255,122,26,.34),transparent 65%)}
+.agora-proof .bg-fx .glow.b{top:420px;right:-200px;width:560px;height:520px;background:radial-gradient(circle,rgba(59,211,224,.14),transparent 65%)}
+
+.agora-proof .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.agora-proof section{position:relative;z-index:1}
+
+.agora-proof header.nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(6,10,18,.85),rgba(6,10,18,.55));border-bottom:1px solid var(--line)}
+.agora-proof .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+.agora-proof .brand{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-.01em;font-size:18px;white-space:nowrap}
+.agora-proof .brand .mark{width:40px;height:40px;flex:none;border-radius:10px;filter:drop-shadow(0 0 14px rgba(255,138,20,.55))}
+.agora-proof .brand b{font-weight:700}.agora-proof .brand .o{color:var(--gold)}
+.agora-proof .nav-right{display:flex;align-items:center;gap:18px}
+.agora-proof .nav-back{color:var(--muted);font-size:14.5px;transition:color .2s;display:inline-flex;align-items:center;gap:8px}
+.agora-proof .nav-back:hover{color:var(--text)}
+.agora-proof .nav-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;padding:9px 16px;border:1px solid var(--line-2);border-radius:10px;color:var(--text);background:rgba(255,255,255,.03);transition:.2s var(--ease)}
+.agora-proof .nav-cta:hover{border-color:rgba(255,154,20,.5);background:rgba(255,154,20,.08)}
+.agora-proof .nav-cta .arr{transition:transform .2s}.agora-proof .nav-cta:hover .arr{transform:translateX(3px)}
+@media(max-width:620px){.agora-proof .nav-back span.txt{display:none}}
+
+.agora-proof .btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15px;border-radius:12px;padding:13px 20px;cursor:pointer;border:1px solid transparent;transition:.22s var(--ease);font-family:inherit}
+.agora-proof .btn .arr{transition:transform .22s var(--ease)}.agora-proof .btn:hover .arr{transform:translateX(4px)}
+.agora-proof .btn-primary{background:var(--grad);color:#1a1206;box-shadow:0 8px 30px -10px rgba(255,138,20,.6),inset 0 1px 0 rgba(255,255,255,.3)}
+.agora-proof .btn-primary:hover{box-shadow:0 12px 40px -10px rgba(255,138,20,.75);transform:translateY(-1px)}
+.agora-proof .btn-primary:disabled{opacity:.7;transform:none;cursor:wait;box-shadow:none}
+
+.agora-proof .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--cyan);display:inline-flex;align-items:center;gap:9px;margin-bottom:20px}
+.agora-proof .live-dot{width:8px;height:8px;border-radius:50%;background:#ff5a3c;position:relative;flex:none}
+.agora-proof .live-dot.cyan{background:var(--cyan)}
+
+.agora-proof .hero{padding:88px 0 26px;max-width:760px}
+.agora-proof .hero h1{font-size:clamp(40px,6vw,72px);line-height:1;letter-spacing:-.03em;font-weight:700;margin-bottom:22px}
+.agora-proof .hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.agora-proof .hero .sub{font-size:clamp(16px,1.6vw,19px);color:var(--muted);max-width:58ch}
+.agora-proof .hero .sub b{color:var(--text);font-weight:600}
+@media(max-width:680px){.agora-proof .hero{padding:54px 0 14px}}
+
+.agora-proof .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:60px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface)}
+@media(max-width:780px){.agora-proof .steps{grid-template-columns:1fr}}
+.agora-proof .step{padding:26px 24px;border-right:1px solid var(--line);position:relative}
+.agora-proof .step:last-child{border-right:none}
+@media(max-width:780px){.agora-proof .step{border-right:none;border-bottom:1px solid var(--line)}.agora-proof .step:last-child{border-bottom:none}}
+.agora-proof .step .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;background:var(--cyan-dim);border:1px solid rgba(59,211,224,.25);color:var(--cyan)}
+.agora-proof .step .st{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-bottom:7px}
+.agora-proof .step h3{font-size:16.5px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em}
+.agora-proof .step p{color:var(--muted);font-size:14px}
+.agora-proof .step p .hl{color:var(--cyan)}
+
+.agora-proof .verify{padding:104px 0 40px}
+.agora-proof .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:30px;flex-wrap:wrap}
+.agora-proof .sec-head h2{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.02em;line-height:1.08;font-weight:700}
+.agora-proof .sec-head .note{color:var(--faint);font-size:13.5px;font-family:'IBM Plex Mono',monospace;max-width:42ch;text-align:right}
+@media(max-width:680px){.agora-proof .sec-head .note{text-align:left}}
+
+.agora-proof .vlayout{display:grid;grid-template-columns:380px 1fr;gap:22px;align-items:start}
+@media(max-width:980px){.agora-proof .vlayout{grid-template-columns:1fr}}
+
+.agora-proof .dlist{display:flex;flex-direction:column;gap:9px}
+.agora-proof .dlist-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:0 4px 4px;display:flex;align-items:center;justify-content:space-between}
+.agora-proof .drow{display:flex;align-items:center;gap:14px;text-align:left;width:100%;border:1px solid var(--line);border-radius:13px;padding:14px 15px;background:var(--surface);transition:.18s var(--ease);position:relative}
+.agora-proof .drow:hover{border-color:var(--line-2);background:var(--surface-2)}
+.agora-proof .drow.active{border-color:rgba(255,154,20,.45);background:linear-gradient(180deg,rgba(255,154,20,.08),rgba(255,154,20,.02))}
+.agora-proof .drow.active::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:3px;border-radius:3px;background:var(--grad)}
+.agora-proof .drow .mdot{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center}
+.agora-proof .drow .mdot.falling{background:rgba(255,106,90,.12);border:1px solid rgba(255,106,90,.28);color:var(--red)}
+.agora-proof .drow .mdot.calm{background:rgba(255,194,74,.12);border:1px solid rgba(255,194,74,.28);color:var(--gold)}
+.agora-proof .drow .mdot.rising{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28);color:var(--tbill)}
+.agora-proof .drow .dmid{flex:1;min-width:0}
+.agora-proof .drow .dmid .t{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.agora-proof .drow .dmid .t span{color:var(--muted);font-weight:400}
+.agora-proof .drow .dmid .s{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--faint);margin-top:3px}
+.agora-proof .drow .chev{flex:none;color:var(--faint);transition:transform .2s,color .2s}
+.agora-proof .drow.active .chev{color:var(--gold)}
+@media(max-width:980px){.agora-proof .drow .chev{display:none}}
+
+.agora-proof .vpanel{background:linear-gradient(180deg,rgba(17,26,46,.7),rgba(13,20,36,.78));border:1px solid var(--line-2);border-radius:18px;overflow:hidden;position:sticky;top:90px;box-shadow:0 40px 80px -36px rgba(0,0,0,.8)}
+@media(max-width:980px){.agora-proof .vpanel{position:static}}
+.agora-proof .vp-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015);flex-wrap:wrap}
+.agora-proof .vp-top .who{display:flex;align-items:center;gap:11px;min-width:0}
+.agora-proof .vp-top .who .id{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);font-weight:600}
+.agora-proof .mtag{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 9px;border-radius:7px;white-space:nowrap;flex:none;height:25px;box-sizing:border-box}
+.agora-proof .mtag.falling{color:var(--red);background:rgba(255,106,90,.12);border:1px solid rgba(255,106,90,.25)}
+.agora-proof .mtag.calm{color:var(--gold);background:rgba(255,194,74,.12);border:1px solid rgba(255,194,74,.25)}
+.agora-proof .mtag.rising{color:var(--tbill);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25)}
+.agora-proof .vp-top .ts{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint)}
+
+.agora-proof .vtabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--line)}
+.agora-proof .vtab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--faint);padding:9px 14px;border:none;background:none;border-bottom:2px solid transparent;transition:.18s;letter-spacing:.02em}
+.agora-proof .vtab:hover{color:var(--muted)}
+.agora-proof .vtab.on{color:var(--text);border-bottom-color:var(--orange)}
+.agora-proof .vtab .tdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle}
+
+.agora-proof .vp-body{padding:20px}
+.agora-proof .summ{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--text);margin-bottom:16px}
+.agora-proof .summ b{font-weight:600}.agora-proof .summ .arrw{color:var(--faint)}
+.agora-proof .alloc{margin-bottom:18px}
+.agora-proof .alloc-bar{height:13px;border-radius:7px;overflow:hidden;display:flex;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.agora-proof .alloc-bar i{display:block;height:100%;transition:width .5s var(--ease)}
+.agora-proof .alloc-bar .c{background:var(--cash)} .agora-proof .alloc-bar .t{background:var(--tbill)} .agora-proof .alloc-bar .y{background:var(--yield)}
+.agora-proof .alloc-legend{display:flex;gap:18px;margin-top:11px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.agora-proof .alloc-legend span{display:flex;align-items:center;gap:7px}
+.agora-proof .alloc-legend .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.agora-proof .alloc-legend .dot.c{background:var(--cash)} .agora-proof .alloc-legend .dot.t{background:var(--tbill)} .agora-proof .alloc-legend .dot.y{background:var(--yield)}
+.agora-proof .alloc-legend b{color:var(--text)}
+
+.agora-proof .jlabel{display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.agora-proof .jlabel .hint{text-transform:none;letter-spacing:0;color:var(--faint)}
+.agora-proof .json{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--muted);background:#070C16;border:1px solid var(--line);border-radius:11px;padding:15px 16px;white-space:pre-wrap;word-break:break-word;margin-bottom:16px}
+.agora-proof .json .key{color:var(--cyan)}
+.agora-proof .json .val{color:var(--gold)}
+.agora-proof .json .ed{color:var(--gold);border-bottom:1px dashed rgba(255,194,74,.5);cursor:text;outline:none;padding:0 1px;border-radius:2px}
+.agora-proof .json .ed:focus{background:rgba(255,194,74,.1);border-bottom-color:var(--gold)}
+.agora-proof .json .ed.bad{color:var(--red);border-bottom-color:var(--red)}
+
+.agora-proof .hashes{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.agora-proof .hashrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.015)}
+.agora-proof .hashrow .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);white-space:nowrap;display:flex;align-items:center;gap:7px}
+.agora-proof .hashrow .lbl .ledge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:var(--grad-soft);border:1px solid rgba(255,154,20,.3);color:var(--gold);font-size:10px}
+.agora-proof .hashrow .lbl .ledge.cy{background:var(--cyan-dim);border-color:rgba(59,211,224,.3);color:var(--cyan)}
+.agora-proof .hashrow .v{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);word-break:break-all;text-align:right}
+.agora-proof .hashrow .v.dim{color:var(--faint)}
+.agora-proof .hashrow .v.computing{color:var(--orange)}
+.agora-proof .hashrow.match{border-color:rgba(59,211,224,.4);background:rgba(59,211,224,.06)}
+.agora-proof .hashrow.fail{border-color:rgba(255,106,90,.4);background:rgba(255,106,90,.06)}
+
+.agora-proof .vp-act{display:flex;gap:10px;align-items:center}
+.agora-proof .vp-act .btn{flex:1;justify-content:center}
+.agora-proof .arcscan{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--cyan);display:inline-flex;align-items:center;gap:7px;padding:13px 14px;border:1px solid var(--line-2);border-radius:12px;transition:.2s;white-space:nowrap}
+.agora-proof .arcscan:hover{border-color:rgba(59,211,224,.4);background:rgba(59,211,224,.06)}
+
+.agora-proof .verdict{display:flex;align-items:center;gap:11px;margin-top:14px;padding:13px 15px;border-radius:11px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.4;animation:proof-pop .4s var(--ease)}
+.agora-proof .verdict.ok{background:rgba(59,211,224,.08);border:1px solid rgba(59,211,224,.35);color:var(--cyan)}
+.agora-proof .verdict.no{background:rgba(255,106,90,.08);border:1px solid rgba(255,106,90,.38);color:var(--red)}
+.agora-proof .verdict .vi{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:rgba(255,255,255,.06)}
+@keyframes proof-pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+.agora-proof .tamper-intro{font-size:13.5px;color:var(--muted);margin-bottom:16px;line-height:1.55}
+.agora-proof .tamper-intro b{color:var(--text);font-weight:600}.agora-proof .tamper-intro .em{color:var(--gold)}
+
+.agora-proof .vp-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 20px;border-top:1px solid var(--line);background:rgba(255,255,255,.015);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--faint)}
+.agora-proof .vp-foot .algo{display:flex;align-items:center;gap:8px}
+
+.agora-proof .trust{margin-top:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:780px){.agora-proof .trust{grid-template-columns:1fr}}
+.agora-proof .tcard{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.015);display:flex;gap:13px;align-items:flex-start}
+.agora-proof .tcard .tic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;background:var(--cyan-dim);border:1px solid rgba(59,211,224,.25);color:var(--cyan)}
+.agora-proof .tcard h4{font-size:14px;font-weight:600;margin-bottom:4px}
+.agora-proof .tcard p{font-size:13px;color:var(--muted)}
+
+.agora-proof footer{border-top:1px solid var(--line);margin-top:90px;padding:30px 0 44px}
+.agora-proof .foot-in{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--faint)}
+.agora-proof .foot-in .links{display:flex;gap:22px}
+.agora-proof .foot-in .links a:hover{color:var(--text)}
+
+.agora-proof .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.agora-proof .reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.agora-proof .reveal{opacity:1;transform:none;transition:none}}
