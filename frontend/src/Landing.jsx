@@ -110,7 +110,7 @@ export default function Landing() {
       <header className="nav">
         <div className="wrap nav-in">
           <Link className="brand" to="/" aria-label="Agora Scout home">
-            <img className="mark" src="/favicon-180.png" alt="" width={40} height={40} />
+            <img className="mark" src="/favicon-180.png" alt="" width={80} height={80} />
             <span>Agora <b className="o">Scout</b></span>
           </Link>
           <nav className="nav-links">
