@@ -78,7 +78,8 @@
 .agora-dash .log-item.active{border-color:rgba(255,154,20,.45);background:linear-gradient(180deg,rgba(255,154,20,.07),rgba(255,154,20,.02))}
 .agora-dash .log-item.active::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--grad)}
 .agora-dash .li-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
-.agora-dash .mtag{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 9px;border-radius:7px}
+.agora-dash .mtag{display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 9px;border-radius:7px;white-space:nowrap;flex:none}
+.agora-dash .mtag svg{flex:none}
 .agora-dash .mtag.bear{color:var(--risk-red);background:rgba(255,106,90,.12);border:1px solid rgba(255,106,90,.25)}
 .agora-dash .mtag.bull{color:var(--safe);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25)}
 .agora-dash .mtag.side{color:var(--gold);background:rgba(255,194,74,.12);border:1px solid rgba(255,194,74,.25)}
@@ -182,10 +183,10 @@
 .agora-dash .arcscan:hover{background:rgba(59,211,224,.06)}
 
 .agora-dash .hist{display:flex;flex-direction:column}
-.agora-dash .hist-row{display:grid;grid-template-columns:120px 1fr 150px;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);transition:.15s}
+.agora-dash .hist-row{display:grid;grid-template-columns:128px 1fr 150px;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);transition:.15s}
 .agora-dash .hist-row:last-child{border-bottom:none}
 .agora-dash .hist-row:hover{background:rgba(255,255,255,.02)}
-.agora-dash .hist-row .hl{display:flex;flex-direction:column;gap:5px}
+.agora-dash .hist-row .hl{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
 .agora-dash .hist-row .htime{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
 .agora-dash .changes{display:flex;gap:22px;flex-wrap:wrap}
 .agora-dash .chg{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
