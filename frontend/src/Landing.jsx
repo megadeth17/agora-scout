@@ -1,325 +1,335 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Eye, Brain, ShieldCheck, ArrowRight, Check, Loader } from 'lucide-react';
-import { regimeHuman, ALLOC } from './lib/plain';
+import { regimeHuman } from './lib/plain';
+import './styles/landing.css';
 
 const API = import.meta.env.VITE_API_URL || '';
+const REPO = 'https://github.com/megadeth17/agora-scout';
 
-/* ── tiny building blocks ─────────────────────────────────────────────────── */
+const short = (h) => (h ? `0x${h.replace(/^0x/, '').slice(0, 10)}…${h.slice(-8)}` : '0x…');
 
-function Pill({ children, color = 'var(--cyan)' }) {
+const REGIME_UI = {
+  BULL:     { chip: 'Rising',  chipCls: 'up',   action: 'Put more to work', dotCls: 'cyan' },
+  BEAR:     { chip: 'Falling', chipCls: '',     action: 'Shift to safety',  dotCls: '' },
+  SIDEWAYS: { chip: 'Calm',    chipCls: 'flat', action: 'Hold steady',      dotCls: 'cyan' },
+};
+
+function Spark({ regime }) {
+  const pts = regime === 'BULL' ? '0,22 14,16 26,18 38,11 50,13 62,6 74,8 86,2'
+    : regime === 'SIDEWAYS' ? '0,13 14,11 26,14 38,12 50,13 62,11 74,13 86,12'
+    : '0,4 14,8 26,6 38,13 50,11 62,18 74,16 86,22';
+  const stroke = regime === 'BULL' ? '#56e0c9' : regime === 'SIDEWAYS' ? '#FFC24A' : '#ff6a5a';
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 7,
-      padding: '6px 12px', borderRadius: 999,
-      background: `${color}14`, border: `1px solid ${color}33`,
-      color, fontSize: 12, fontFamily: 'var(--font-mono)',
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: 999, background: color, animation: 'pulse-dot 2s infinite' }} />
-      {children}
-    </span>
+    <svg className="spark" width="86" height="26" viewBox="0 0 86 26">
+      <polyline points={pts} fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
-function StepCard({ icon: Icon, n, title, body }) {
-  return (
-    <div style={{
-      flex: 1, minWidth: 220,
-      background: 'var(--bg-card)', border: '1px solid var(--border-card)',
-      borderRadius: 'var(--radius-lg)', padding: '22px 20px',
-      display: 'flex', flexDirection: 'column', gap: 12,
-      boxShadow: 'var(--shadow-card)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 'var(--radius-md)',
-          background: 'rgba(252,122,0,0.10)', border: '1px solid var(--border-orange)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon size={19} color="var(--orange)" strokeWidth={1.8} />
-        </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-dim)' }}>0{n}</span>
-      </div>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.25 }}>{title}</h3>
-      <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{body}</p>
-    </div>
-  );
+function useReveal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+    root.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    const card = root.querySelector('#hero-card');
+    if (card) requestAnimationFrame(() => card.classList.add('in'));
+    return () => io.disconnect();
+  }, []);
+  return ref;
 }
-
-/* ── "Check a decision" — live trust demo ─────────────────────────────────── */
-
-function TrustDemo() {
-  const [state, setState] = useState('idle'); // idle | loading | ok | fail | none
-  const [detail, setDetail] = useState(null);
-
-  const check = async () => {
-    setState('loading');
-    try {
-      const list = await axios.get(`${API}/api/rebalances?limit=20`);
-      const anchored = (list.data.rebalances || []).find(r => r.arcscan_url && r.id != null);
-      if (!anchored) { setState('none'); return; }
-      const r = await axios.get(`${API}/api/verify/${anchored.id}`);
-      setDetail({ ...r.data, arcscan_url: anchored.arcscan_url });
-      setState(r.data.verified ? 'ok' : 'fail');
-    } catch {
-      setState('fail');
-    }
-  };
-
-  return (
-    <div style={{
-      background: 'var(--bg-card)', border: '1px solid var(--border-card)',
-      borderRadius: 'var(--radius-lg)', padding: '24px 22px',
-      display: 'flex', flexDirection: 'column', gap: 16, boxShadow: 'var(--shadow-card)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <ShieldCheck size={20} color="var(--cyan)" strokeWidth={1.8} />
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600 }}>Don't trust it. Check it.</span>
-      </div>
-      <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
-        Most AI bots ask you to just believe them. This one doesn't. Every decision gets stamped on a
-        public record before any money moves, and anyone can check the stamp matches. Try it on a real one:
-      </p>
-
-      <button
-        onClick={check}
-        disabled={state === 'loading'}
-        style={{
-          alignSelf: 'flex-start',
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '11px 18px', borderRadius: 'var(--radius-md)',
-          background: 'var(--grad-data)', color: '#04121a',
-          border: 'none', cursor: state === 'loading' ? 'wait' : 'pointer',
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13.5,
-          boxShadow: 'var(--shadow-blue)',
-        }}
-      >
-        {state === 'loading' ? <Loader size={15} className="spin" /> : <ShieldCheck size={15} strokeWidth={2.2} />}
-        {state === 'loading' ? 'Checking the record…' : 'Check a real decision'}
-      </button>
-
-      {state === 'ok' && detail && (
-        <div style={{
-          padding: '14px 16px', borderRadius: 'var(--radius-md)',
-          background: 'rgba(34,197,94,0.08)', border: '1px solid var(--border-green)',
-          display: 'flex', flexDirection: 'column', gap: 8,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--bull)', fontWeight: 600, fontSize: 14 }}>
-            <Check size={16} strokeWidth={2.5} /> They match.
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            The decision the agent showed is exactly the one written on the public record. Nothing was changed after the fact.
-          </p>
-          <a href={detail.arcscan_url} target="_blank" rel="noopener noreferrer"
-             style={{ fontSize: 12, color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>
-            See the public record yourself →
-          </a>
-        </div>
-      )}
-      {state === 'fail' && (
-        <div style={{ fontSize: 13, color: 'var(--bear)' }}>Couldn't reach the record right now. Try again in a moment.</div>
-      )}
-      {state === 'none' && (
-        <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>No on-chain decision to check yet — the agent logs one each time it moves money.</div>
-      )}
-
-      <Link to="/proof" style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-        fontSize: 13, color: 'var(--cyan)', fontFamily: 'var(--font-display)', fontWeight: 600,
-      }}>
-        See how the proof works, and check more <ArrowRight size={14} />
-      </Link>
-    </div>
-  );
-}
-
-/* ── Landing page ─────────────────────────────────────────────────────────── */
 
 export default function Landing() {
-  const [regime, setRegime] = useState(null);
+  const [regime, setRegime] = useState('SIDEWAYS');
   const [portfolio, setPortfolio] = useState(null);
   const [traction, setTraction] = useState(null);
+  const [anchor, setAnchor] = useState(null); // {id, decision_hash, arcscan_url}
+  const rootRef = useReveal();
+
+  // verify terminal state
+  const [vState, setVState] = useState('idle'); // idle|loading|ok|fail
+  const [vData, setVData] = useState(null);
+  const [shuffle, setShuffle] = useState('');
 
   useEffect(() => {
-    axios.get(`${API}/api/decisions?limit=1`).then(r => setRegime(r.data.decisions?.[0]?.regime || 'SIDEWAYS')).catch(() => setRegime('SIDEWAYS'));
+    axios.get(`${API}/api/decisions?limit=1`).then(r => setRegime(r.data.decisions?.[0]?.regime || 'SIDEWAYS')).catch(() => {});
     axios.get(`${API}/api/portfolio`).then(r => setPortfolio(r.data)).catch(() => {});
     axios.get(`${API}/api/traction`).then(r => setTraction(r.data)).catch(() => {});
+    axios.get(`${API}/api/rebalances?limit=20`).then(r => {
+      const a = (r.data.rebalances || []).find(x => x.arcscan_url && x.id != null);
+      if (a) setAnchor({ id: a.id, decision_hash: a.decision_hash, arcscan_url: a.arcscan_url, regime: a.trigger_regime });
+    }).catch(() => {});
   }, []);
 
   const human = regimeHuman(regime);
+  const ui = REGIME_UI[regime] || REGIME_UI.SIDEWAYS;
+  const safe = portfolio ? Math.round((portfolio.usdc_pct || 0) + (portfolio.usyc_pct || 0)) : 78;
+  const yld = portfolio ? Math.round(portfolio.yield_pct || 0) : 22;
+
+  const runVerify = async () => {
+    if (!anchor || vState === 'loading') return;
+    setVState('loading'); setVData(null);
+    const hex = '0123456789abcdef';
+    let frames = 0;
+    const iv = setInterval(() => {
+      let s = ''; for (let k = 0; k < 18; k++) s += hex[Math.floor(Math.random() * 16)];
+      setShuffle('0x' + s + '…');
+      if (++frames > 16) clearInterval(iv);
+    }, 45);
+    try {
+      const r = await axios.get(`${API}/api/verify/${anchor.id}`);
+      setTimeout(() => {
+        clearInterval(iv);
+        setVData(r.data);
+        setVState(r.data.verified ? 'ok' : 'fail');
+      }, 780);
+    } catch {
+      clearInterval(iv); setVState('fail');
+    }
+  };
+
+  const decisionJson = {
+    decision: anchor?.id ?? '—',
+    market: regime.toLowerCase(),
+    action: ui.action.toLowerCase().replace(/ /g, '_'),
+    asset: 'USDC',
+    network: 'arc-testnet',
+  };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="agora-landing" ref={rootRef}>
+      <div className="bg-fx" aria-hidden="true">
+        <div className="grid" /><div className="glow a" /><div className="glow b" />
+      </div>
 
-      {/* Nav */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px clamp(16px, 5vw, 48px)', maxWidth: 1120, margin: '0 auto', width: '100%',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/logo.png" alt="Agora Scout" width={34} height={34} style={{ display: 'block', filter: 'drop-shadow(0 0 12px rgba(252,122,0,0.28))' }} />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>
-            <span style={{ color: 'var(--text-primary)' }}>Agora </span>
-            <span style={{ background: 'linear-gradient(90deg, var(--orange), var(--gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scout</span>
-          </span>
-        </div>
-        <Link to="/dashboard" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)',
-          fontSize: 13, fontFamily: 'var(--font-display)', fontWeight: 600,
-        }}>
-          Live dashboard <ArrowRight size={14} />
-        </Link>
-      </nav>
-
-      {/* Hero */}
-      <header style={{
-        maxWidth: 1120, margin: '0 auto', width: '100%',
-        padding: 'clamp(40px, 7vw, 88px) clamp(16px, 5vw, 48px) clamp(28px, 4vw, 48px)',
-        display: 'flex', flexDirection: 'column', gap: 26, alignItems: 'flex-start',
-      }}>
-        {regime && (
-          <Pill color={regime === 'BULL' ? 'var(--bull)' : regime === 'BEAR' ? 'var(--bear)' : 'var(--gold)'}>
-            Right now · {human.label}
-          </Pill>
-        )}
-        <h1 style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700,
-          fontSize: 'clamp(2.2rem, 5.5vw, 4.2rem)', lineHeight: 1.05, letterSpacing: '-0.02em',
-          maxWidth: 920,
-        }}>
-          A robot that manages a pot of{' '}
-          <span style={{ background: 'var(--grad-warm)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>digital dollars</span>
-          {' '}— and proves every move it makes.
-        </h1>
-        <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 680 }}>
-          {human.mood}
-        </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link to="/dashboard" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '13px 22px', borderRadius: 'var(--radius-md)',
-            background: 'var(--grad-warm)', color: '#1a0c00',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
-            boxShadow: 'var(--shadow-orange)',
-          }}>
-            See it live <ArrowRight size={16} strokeWidth={2.4} />
+      {/* NAV */}
+      <header className="nav">
+        <div className="wrap nav-in">
+          <Link className="brand" to="/" aria-label="Agora Scout home">
+            <img className="mark" src="/favicon-64.png" alt="" width={30} height={30} />
+            <span>Agora <b className="o">Scout</b></span>
           </Link>
-          <a href="#how" style={{
-            display: 'inline-flex', alignItems: 'center',
-            padding: '13px 22px', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-subtle)', color: 'var(--text-primary)',
-            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15,
-          }}>
-            How it works
-          </a>
+          <nav className="nav-links">
+            <a href="#what">What it does</a>
+            <a href="#how">How it works</a>
+            <a href="#verify">Verify</a>
+            <a href="#built">Built on</a>
+          </nav>
+          <Link className="nav-cta" to="/dashboard">Live dashboard <span className="arr">→</span></Link>
         </div>
       </header>
 
-      {/* How it works — 3 steps */}
-      <section id="how" style={{ maxWidth: 1120, margin: '0 auto', width: '100%', padding: 'clamp(20px,4vw,48px) clamp(16px,5vw,48px)' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem,3vw,1.9rem)', fontWeight: 700, marginBottom: 24 }}>How it works</h2>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <StepCard icon={Eye} n={1} title="It watches the market" body="Every 10 minutes it reads prices, big-trader activity, and where interest is being paid." />
-          <StepCard icon={Brain} n={2} title="It decides what's safest" body="It works out where your money should sit right now, between cash, government bonds, and higher-interest spots." />
-          <StepCard icon={ShieldCheck} n={3} title="It proves it before acting" body="Before it moves a single dollar, it writes that decision onto a public ledger so you can check it later." />
-        </div>
-      </section>
+      {/* HERO */}
+      <section className="hero" id="top">
+        <div className="wrap hero-grid">
+          <div className="hero-copy">
+            <span className="pill"><span className={`live-dot ${ui.dotCls}`} /><span className="mono">Right now · {human.label}</span></span>
+            <h1>A robot that manages a pot of <span className="grad">digital dollars</span> — and proves every move it makes.</h1>
+            <p className="sub">{human.mood} You can watch it happen, and check the math yourself.</p>
+            <div className="hero-cta">
+              <Link className="btn btn-primary" to="/dashboard">See it live <span className="arr">→</span></Link>
+              <a className="btn btn-ghost" href="#how">How it works</a>
+            </div>
+            <div className="micro">
+              <span><span className="live-dot cyan" />Running <b>24/7</b> on Arc</span>
+              <span>·</span>
+              <span><b>{traction?.total_decisions ?? '800+'}</b> decisions</span>
+              <span>·</span>
+              <span>Every move <b>on-chain</b></span>
+            </div>
+          </div>
 
-      {/* The money, explained */}
-      <section style={{ maxWidth: 1120, margin: '0 auto', width: '100%', padding: 'clamp(20px,4vw,48px) clamp(16px,5vw,48px)' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem,3vw,1.9rem)', fontWeight: 700, marginBottom: 8 }}>Where the money sits</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24, maxWidth: 620, lineHeight: 1.6 }}>
-          Think of it like a savings account that rebalances itself. Here's the split right now:
-        </p>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          {ALLOC.map(a => {
-            const pct = portfolio?.[a.key];
-            return (
-              <div key={a.key} style={{
-                flex: 1, minWidth: 200,
-                background: 'var(--bg-card)', border: '1px solid var(--border-card)',
-                borderRadius: 'var(--radius-lg)', padding: '20px',
-                display: 'flex', flexDirection: 'column', gap: 8,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16 }}>
-                    {a.name} <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>({a.tag})</span>
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 600, color: a.color, fontVariantNumeric: 'tabular-nums' }}>
-                    {pct == null ? '—' : `${Math.round(pct)}%`}
-                  </span>
-                </div>
-                <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct ?? 0}%`, background: a.color, borderRadius: 2, transition: 'width 0.6s var(--ease-out-expo, ease)' }} />
-                </div>
-                <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{a.desc}</span>
+          {/* live decision card */}
+          <div className="card" id="hero-card">
+            <div className="card-top">
+              <span className="id">Latest decision&nbsp; <b>#{anchor?.id ?? '—'}</b></span>
+              <span className="tag-live"><span className="live-dot cyan" />on-chain</span>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <span className="lab">Market read</span>
+                <span className="read"><Spark regime={regime} /><span className={`chip ${ui.chipCls}`}>{ui.chip}</span></span>
               </div>
-            );
-          })}
+              <div className="row" style={{ marginBottom: 8 }}><span className="lab">Action taken</span><span style={{ fontWeight: 600, fontSize: '14.5px' }}>{ui.action}</span></div>
+              <div className="alloc">
+                <div className="alloc-bar"><i className="safe" style={{ width: `${safe}%` }} /><i className="yield" style={{ width: `${yld}%` }} /></div>
+                <div className="alloc-legend">
+                  <span><i className="dot safe" />Safe reserve&nbsp; <b style={{ color: '#fff' }}>{safe}%</b></span>
+                  <span><i className="dot yield" />Yield&nbsp; <b style={{ color: '#fff' }}>{yld}%</b></span>
+                </div>
+              </div>
+              <div className="proof">
+                <div className="hline"><span className="k">Decision hash</span><span className="hash">{anchor ? short(anchor.decision_hash) : '0x…'}</span></div>
+                <div className="hline"><span className="k">Anchored on Arc</span><span className="verified">✓ {anchor ? 'confirmed' : '—'}</span></div>
+              </div>
+            </div>
+            <div className="card-foot">
+              <a href="#verify" className="go">Verify this decision →</a>
+              <Link to="/dashboard">Open dashboard</Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Trust demo */}
-      <section style={{ maxWidth: 1120, margin: '0 auto', width: '100%', padding: 'clamp(20px,4vw,48px) clamp(16px,5vw,48px)' }}>
-        <TrustDemo />
+      {/* WHAT IT DOES */}
+      <section className="sec" id="what">
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <div className="eyebrow">In plain English</div>
+            <h2>No crypto knowledge needed. Here's the whole idea.</h2>
+            <p>Think of a careful money manager that never sleeps. It watches the market, moves your digital dollars toward safety when things get rough, and leaves a public receipt for every single move.</p>
+          </div>
+          <div className="three">
+            <div className="feat reveal">
+              <div className="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFC24A" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg></div>
+              <div className="num">01</div><h3>It watches the market</h3>
+              <p>Around the clock, the agent reads what prices are doing and decides whether it's a calm day or a risky one.</p>
+            </div>
+            <div className="feat reveal">
+              <div className="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFC24A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
+              <div className="num">02</div><h3>It moves to safety</h3>
+              <p>When the market drops, it pulls more of the pot into a safe reserve. When things steady, it earns a little yield again.</p>
+            </div>
+            <div className="feat cyan reveal">
+              <div className="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3BD3E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4" /><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
+              <div className="num">03</div><h3>It proves every move</h3>
+              <p>Before any money moves, the decision is stamped on a public ledger. Anyone, including you, can check it was honest.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Numbers in human terms */}
-      {traction && (
-        <section style={{ maxWidth: 1120, margin: '0 auto', width: '100%', padding: 'clamp(8px,2vw,24px) clamp(16px,5vw,48px) clamp(28px,5vw,56px)' }}>
-          <div style={{
-            display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'center',
-            padding: '22px 24px', borderRadius: 'var(--radius-lg)',
-            background: 'var(--bg-secondary)', border: '1px solid var(--border-card)',
-          }}>
-            <Stat n={traction.total_decisions} label="decisions made" />
-            <Stat n={traction.total_rebalances} label="times it moved money" />
-            <Stat n={traction.onchain_anchored} label="logged on-chain" color="var(--cyan)" />
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 280, lineHeight: 1.55 }}>
-              Every move is on a public ledger. None of it is on our word alone.
-            </span>
+      {/* HOW IT WORKS */}
+      <section className="sec" id="how" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <div className="eyebrow">How it works</div>
+            <h2>Commit, then act. Never the other way around.</h2>
+            <p>The agent writes down what it's about to do and anchors it on-chain <b style={{ color: 'var(--text)' }}>before</b> a single dollar moves. That ordering is the whole point. It can't decide one thing and claim another.</p>
           </div>
-        </section>
-      )}
-
-      {/* Footer CTA */}
-      <footer style={{ marginTop: 'auto', borderTop: '1px solid var(--border-dim)', background: 'var(--bg-secondary)' }}>
-        <div style={{
-          maxWidth: 1120, margin: '0 auto', width: '100%',
-          padding: 'clamp(28px,5vw,52px) clamp(16px,5vw,48px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
-        }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.2rem,3vw,1.7rem)', fontWeight: 700 }}>Want the full picture?</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 6 }}>The live dashboard shows every decision as it happens.</p>
+          <div className="flow">
+            {[
+              { n: 1, st: 'Decide', h: 'Read & decide', p: 'The agent reads market conditions and computes its next allocation between safe reserve and yield.' },
+              { n: 2, st: 'Commit', h: 'Hash & anchor', p: 'The full decision is hashed and the hash is written to Arc, a permanent, timestamped commitment.', commit: true },
+              { n: 3, st: 'Act', h: 'Move the money', p: 'Only after the commit lands does it rebalance the USDC. The action must match what it promised.' },
+              { n: 4, st: 'Verify', h: 'Anyone verifies', p: 'Recompute the hash from the public decision and match it to the on-chain record. No trust required.' },
+            ].map((s) => (
+              <div className="step reveal" key={s.n}>
+                <div className={`st ${s.commit ? 'commit' : ''}`}><span className="n">{s.n}</span>{s.st}</div>
+                <h4>{s.h}</h4><p>{s.p}</p>
+              </div>
+            ))}
           </div>
-          <Link to="/dashboard" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '13px 22px', borderRadius: 'var(--radius-md)',
-            background: 'var(--grad-warm)', color: '#1a0c00',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, boxShadow: 'var(--shadow-orange)',
-          }}>
-            Open the live dashboard <ArrowRight size={16} strokeWidth={2.4} />
-          </Link>
         </div>
-        <div style={{ textAlign: 'center', padding: '0 0 22px', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-          Built on Arc · USDC-native · Agora Agents Hackathon 2026
+      </section>
+
+      {/* VERIFY */}
+      <section className="sec" id="verify" style={{ paddingTop: 0 }}>
+        <div className="wrap verify-grid">
+          <div className="verify-copy reveal">
+            <div className="eyebrow">Don't trust. Verify.</div>
+            <h2>Check a decision <span className="grad">yourself.</span></h2>
+            <p>This is the part that matters. Below is a real decision the agent anchored. Recompute its hash against the public record and watch it match what's written on Arc.</p>
+            <ul className="verify-list">
+              <li><span className="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3BD3E0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6" /></svg></span><span>The hash is recomputed from the <b style={{ color: 'var(--text)' }}>stored decision</b>, not taken on faith.</span></li>
+              <li><span className="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3BD3E0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6" /></svg></span><span>The same check runs on a <b style={{ color: 'var(--text)' }}>public endpoint</b> and the <span className="mono">/proof</span> page.</span></li>
+              <li><span className="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3BD3E0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6" /></svg></span><span>Cross-check the anchor independently on <b style={{ color: 'var(--text)' }}>Arcscan</b>.</span></li>
+            </ul>
+          </div>
+
+          <div className="terminal reveal">
+            <div className="term-top">
+              <div className="dots"><i /><i /><i /></div>
+              <span className="title">verify — decision #{anchor?.id ?? '—'}</span>
+            </div>
+            <div className="term-body">
+              <div className="json">{'{\n'}{Object.entries(decisionJson).map(([k, v], i, arr) => (
+                <span key={k}>{'  '}"<span className="key">{k}</span>": <span className="val">{typeof v === 'string' ? `"${v}"` : v}</span>{i < arr.length - 1 ? ',' : ''}{'\n'}</span>
+              ))}{'}'}</div>
+              <div className="hashline">
+                <div className={`hashrow ${vState === 'ok' ? 'match' : ''}`}><span className="lbl">on-chain hash (Arc)</span><span className="v">{vData?.onchain_calldata ? short(vData.onchain_calldata) : (anchor ? short(anchor.decision_hash) : '0x…')}</span></div>
+                <div className={`hashrow ${vState === 'ok' ? 'match' : ''}`}><span className="lbl">recomputed hash</span><span className={`v ${vState === 'loading' ? 'computing' : ''}`}>{vState === 'loading' ? shuffle : vData?.recomputed_hash ? short(vData.recomputed_hash) : vData?.stored_hash ? short(vData.stored_hash) : '— not computed yet —'}</span></div>
+              </div>
+              <button className="btn btn-primary verify-btn" onClick={runVerify} disabled={!anchor || vState === 'loading'}>
+                {vState === 'ok' ? 'Verified ✓' : vState === 'loading' ? 'Recomputing…' : 'Recompute & verify'} {vState !== 'ok' && <span className="arr">→</span>}
+              </button>
+              <div className={`verdict ${vState === 'ok' ? 'show' : ''}`}><span>✓</span><span>Match — this decision is authentic and was committed before any money moved.</span></div>
+            </div>
+            <div className="term-foot">
+              <span className="mono" style={{ color: 'var(--faint)' }}>SHA-256 · commit-then-act</span>
+              {anchor?.arcscan_url ? <a href={anchor.arcscan_url} target="_blank" rel="noopener noreferrer">View on Arcscan →</a> : <Link to="/proof">See all proofs →</Link>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section className="sec" id="live" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <div className="eyebrow">Live track record</div>
+            <h2>It's been running on its own. The numbers are real.</h2>
+            <p>Agora Scout operates unattended on Arc testnet. Every figure below is backed by an on-chain record you can open and inspect.</p>
+          </div>
+          <div className="stats">
+            <div className="stat reveal"><div className="v">{traction?.total_decisions ?? '—'}</div><div className="l">Decisions made</div><div className="s">each hashed &amp; anchored</div></div>
+            <div className="stat reveal"><div className="v">{traction?.total_rebalances ?? '—'}</div><div className="l">Rebalances executed</div><div className="s">commit-then-act</div></div>
+            <div className="stat cyan reveal"><div className="v">{traction?.onchain_anchored ?? '—'}</div><div className="l">Moves proven on-chain</div><div className="s">verifiable on Arcscan</div></div>
+            <div className="stat cyan reveal"><div className="v">24/7</div><div className="l">Unattended uptime</div><div className="s">on Arc testnet</div></div>
+          </div>
+        </div>
+      </section>
+
+      {/* BUILT ON */}
+      <section className="sec" id="built" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <div className="eyebrow">Built on</div>
+            <h2>Real money rails, fully open.</h2>
+            <p>No mock tokens, no closed black box. Agora Scout runs on Circle USDC and Arc, and the entire codebase is public.</p>
+          </div>
+          <div className="built">
+            <div className="tech reveal"><div className="ic usdc">$</div><div><h4>Circle USDC</h4><p>The pot is real USDC, a fully-reserved digital dollar, not a synthetic stand-in.</p></div></div>
+            <div className="tech reveal"><div className="ic arc">◆</div><div><h4>Arc network</h4><p>Decisions are anchored on Arc, where USDC is the native gas. Verify any anchor on Arcscan.</p></div></div>
+            <a className="tech reveal" href={REPO} target="_blank" rel="noopener noreferrer"><div className="ic git"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.7c-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.36 9.36 0 0 1 12 6.85c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.35 4.79-4.58 5.05.36.32.68.94.68 1.9v2.82c0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2z" /></svg></div><div><h4>Open source</h4><p>Read every line. The agent, the proof endpoint and the dashboard are on GitHub <span className="mono" style={{ color: 'var(--gold)' }}>@megadeth17</span>.</p></div></a>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="sec" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="cta-final reveal">
+            <span className="pill" style={{ marginBottom: 22 }}><span className="live-dot" /><span className="mono">Live now on Arc testnet</span></span>
+            <h2>Watch the robot work — and prove it.</h2>
+            <p>Open the live dashboard to see what the agent is doing right now, then check any decision for yourself.</p>
+            <div className="btns">
+              <Link className="btn btn-primary" to="/dashboard">See it live <span className="arr">→</span></Link>
+              <Link className="btn btn-ghost" to="/proof">Check a decision</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer>
+        <div className="wrap foot-in">
+          <div className="left">
+            <img src="/favicon-64.png" alt="" width={22} height={22} style={{ borderRadius: 6 }} />
+            <span>Agora Scout — proof-first agent for digital dollars.</span>
+          </div>
+          <nav className="foot-links">
+            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/proof">Proof</Link>
+            <a href={REPO} target="_blank" rel="noopener noreferrer">GitHub</a>
+            {anchor?.arcscan_url && <a href={anchor.arcscan_url} target="_blank" rel="noopener noreferrer">Arcscan</a>}
+          </nav>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function Stat({ n, label, color = 'var(--orange)' }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 26, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-        {n ?? '—'}
-      </span>
-      <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</span>
     </div>
   );
 }

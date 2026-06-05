@@ -1,0 +1,244 @@
+/* Agora Scout — landing visual system (ported from Claude Design).
+   Tokens scoped to .agora-landing so the dashboard/proof keep globals.css. */
+
+.agora-landing{
+  --bg:#060A12;
+  --bg-2:#080D18;
+  --surface:#0D1424;
+  --surface-2:#111A2E;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.14);
+  --text:#EAEEF7;
+  --muted:#9AA4B8;
+  --faint:#646E84;
+  --orange:#FF7A1A;
+  --gold:#FFC24A;
+  --cyan:#3BD3E0;
+  --cyan-dim:rgba(59,211,224,.13);
+  --grad:linear-gradient(100deg,#FF6A00 0%,#FF9A14 48%,#FFC53D 100%);
+  --grad-soft:linear-gradient(100deg,rgba(255,106,0,.18),rgba(255,197,61,.12));
+  --maxw:1200px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+.agora-landing .mono{font-family:'IBM Plex Mono',monospace}
+.agora-landing a{color:inherit;text-decoration:none}
+.agora-landing ::selection{background:rgba(255,154,20,.3)}
+
+.agora-landing .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.agora-landing .bg-fx .grid{
+  position:absolute;inset:-2px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 0%,transparent 70%);
+          mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 0%,transparent 70%);
+  opacity:.5;
+}
+.agora-landing .bg-fx .glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.5}
+.agora-landing .bg-fx .glow.a{top:-220px;left:46%;width:640px;height:520px;transform:translateX(-50%);background:radial-gradient(circle,rgba(255,122,26,.4),transparent 65%)}
+.agora-landing .bg-fx .glow.b{top:340px;right:-180px;width:560px;height:520px;background:radial-gradient(circle,rgba(59,211,224,.16),transparent 65%)}
+
+.agora-landing .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.agora-landing section{position:relative;z-index:1}
+
+.agora-landing header.nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(6,10,18,.85),rgba(6,10,18,.55));
+  border-bottom:1px solid var(--line)}
+.agora-landing .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+.agora-landing .brand{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-.01em;font-size:18px;white-space:nowrap}
+.agora-landing .brand .mark{width:30px;height:30px;flex:none;border-radius:8px}
+.agora-landing .brand b{font-weight:700}
+.agora-landing .brand .o{color:var(--gold)}
+.agora-landing .nav-links{display:flex;align-items:center;gap:30px}
+.agora-landing .nav-links a{color:var(--muted);font-size:14.5px;transition:color .2s}
+.agora-landing .nav-links a:hover{color:var(--text)}
+.agora-landing .nav-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+  padding:9px 16px;border:1px solid var(--line-2);border-radius:10px;color:var(--text);
+  background:rgba(255,255,255,.03);transition:.2s var(--ease)}
+.agora-landing .nav-cta:hover{border-color:rgba(255,154,20,.5);background:rgba(255,154,20,.08)}
+.agora-landing .nav-cta .arr{transition:transform .2s}
+.agora-landing .nav-cta:hover .arr{transform:translateX(3px)}
+@media(max-width:860px){.agora-landing .nav-links{display:none}}
+
+.agora-landing .btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15.5px;
+  border-radius:12px;padding:14px 22px;cursor:pointer;border:1px solid transparent;
+  transition:.22s var(--ease);font-family:inherit}
+.agora-landing .btn .arr{transition:transform .22s var(--ease)}
+.agora-landing .btn:hover .arr{transform:translateX(4px)}
+.agora-landing .btn-primary{background:var(--grad);color:#1a1206;box-shadow:0 8px 30px -10px rgba(255,138,20,.6),inset 0 1px 0 rgba(255,255,255,.3)}
+.agora-landing .btn-primary:hover{box-shadow:0 12px 40px -10px rgba(255,138,20,.75),inset 0 1px 0 rgba(255,255,255,.35);transform:translateY(-1px)}
+.agora-landing .btn-ghost{background:rgba(255,255,255,.04);border-color:var(--line-2);color:var(--text)}
+.agora-landing .btn-ghost:hover{background:rgba(255,255,255,.07);border-color:var(--line-2)}
+
+.agora-landing .pill{display:inline-flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;letter-spacing:.02em;color:var(--muted);
+  border:1px solid var(--line);background:rgba(255,255,255,.025);
+  padding:7px 13px;border-radius:100px}
+.agora-landing .live-dot{width:8px;height:8px;border-radius:50%;background:#ff5a3c;position:relative;flex:none}
+.agora-landing .live-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid #ff5a3c;opacity:.6;animation:al-ping 1.8s var(--ease) infinite}
+.agora-landing .live-dot.cyan{background:var(--cyan)}
+.agora-landing .live-dot.cyan::after{border-color:var(--cyan)}
+@keyframes al-ping{0%{transform:scale(.7);opacity:.7}80%,100%{transform:scale(2.1);opacity:0}}
+
+.agora-landing .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--orange);display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.agora-landing .eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+
+.agora-landing .hero{padding:74px 0 30px}
+.agora-landing .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.agora-landing .hero h1{font-size:clamp(38px,5.4vw,68px);line-height:1.02;letter-spacing:-.025em;font-weight:700;margin:20px 0 22px}
+.agora-landing .hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.agora-landing .hero .sub{font-size:clamp(16px,1.5vw,19px);color:var(--muted);max-width:34ch;margin-bottom:32px}
+.agora-landing .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.agora-landing .micro{margin-top:26px;display:flex;gap:22px;flex-wrap:wrap;color:var(--faint);font-size:13px;font-family:'IBM Plex Mono',monospace}
+.agora-landing .micro span{display:flex;align-items:center;gap:8px}
+.agora-landing .micro b{color:var(--text);font-weight:600}
+@media(max-width:920px){.agora-landing .hero-grid{grid-template-columns:1fr;gap:40px}.agora-landing .hero{padding:48px 0 10px}}
+
+.agora-landing .card{background:linear-gradient(180deg,rgba(20,28,48,.9),rgba(13,20,36,.92));
+  border:1px solid var(--line-2);border-radius:18px;
+  box-shadow:0 40px 80px -30px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset;
+  overflow:hidden;backdrop-filter:blur(8px)}
+.agora-landing .card-top{display:flex;align-items:center;justify-content:space-between;
+  padding:15px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015)}
+.agora-landing .card-top .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)}
+.agora-landing .card-top .id b{color:var(--text)}
+.agora-landing .tag-live{display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;color:var(--cyan);border:1px solid var(--cyan-dim);background:var(--cyan-dim);padding:4px 9px;border-radius:7px}
+.agora-landing .card-body{padding:20px 18px}
+.agora-landing .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.agora-landing .row .lab{color:var(--faint);font-size:12.5px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+.agora-landing .read{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.agora-landing .read .chip{font-size:12px;font-family:'IBM Plex Mono',monospace;color:#ff6a5a;background:rgba(255,90,60,.12);border:1px solid rgba(255,90,60,.25);padding:3px 8px;border-radius:6px}
+.agora-landing .read .chip.up{color:#56e0c9;background:rgba(86,224,201,.12);border-color:rgba(86,224,201,.25)}
+.agora-landing .read .chip.flat{color:var(--gold);background:rgba(255,194,74,.12);border-color:rgba(255,194,74,.25)}
+.agora-landing svg.spark{display:block}
+.agora-landing .alloc{margin:6px 0 18px}
+.agora-landing .alloc-bar{height:12px;border-radius:7px;overflow:hidden;display:flex;border:1px solid var(--line)}
+.agora-landing .alloc-bar i{display:block;height:100%}
+.agora-landing .alloc-bar .safe{background:linear-gradient(90deg,#3BD3E0,#56e0c9)}
+.agora-landing .alloc-bar .yield{background:var(--grad)}
+.agora-landing .alloc-legend{display:flex;gap:18px;margin-top:10px;font-size:12.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.agora-landing .alloc-legend span{display:flex;align-items:center;gap:7px}
+.agora-landing .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.agora-landing .dot.safe{background:#3BD3E0}
+.agora-landing .dot.yield{background:var(--gold)}
+.agora-landing .proof{border-top:1px dashed var(--line-2);margin-top:4px;padding-top:16px}
+.agora-landing .proof .hline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}
+.agora-landing .proof .hline .k{font-size:12px;color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.agora-landing .proof .hash{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text)}
+.agora-landing .verified{display:inline-flex;align-items:center;gap:7px;color:var(--cyan);font-size:12.5px;font-family:'IBM Plex Mono',monospace}
+.agora-landing .card-foot{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line);background:rgba(255,255,255,.015)}
+.agora-landing .card-foot a{flex:1;text-align:center;font-size:13.5px;font-weight:600;padding:11px;border-radius:10px;
+  border:1px solid var(--line-2);color:var(--text);transition:.2s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.agora-landing .card-foot a.go{background:rgba(255,154,20,.1);border-color:rgba(255,154,20,.35);color:var(--gold)}
+.agora-landing .card-foot a:hover{background:rgba(255,255,255,.06)}
+.agora-landing .card-foot a.go:hover{background:rgba(255,154,20,.18)}
+
+.agora-landing .sec{padding:96px 0}
+.agora-landing .sec-head{max-width:680px;margin-bottom:54px}
+.agora-landing .sec-head h2{font-size:clamp(28px,3.6vw,44px);letter-spacing:-.02em;line-height:1.08;font-weight:700;margin-bottom:16px}
+.agora-landing .sec-head p{color:var(--muted);font-size:17px;max-width:56ch}
+
+.agora-landing .three{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:860px){.agora-landing .three{grid-template-columns:1fr}}
+.agora-landing .feat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 24px;transition:.25s var(--ease)}
+.agora-landing .feat:hover{border-color:var(--line-2);transform:translateY(-3px);background:var(--surface-2)}
+.agora-landing .feat .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;margin-bottom:18px;
+  background:var(--grad-soft);border:1px solid rgba(255,154,20,.22)}
+.agora-landing .feat .num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-bottom:8px}
+.agora-landing .feat h3{font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:9px}
+.agora-landing .feat p{color:var(--muted);font-size:14.5px}
+.agora-landing .feat.cyan .ic{background:var(--cyan-dim);border-color:rgba(59,211,224,.25)}
+
+.agora-landing .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface)}
+@media(max-width:860px){.agora-landing .flow{grid-template-columns:1fr}}
+.agora-landing .step{padding:30px 26px;border-right:1px solid var(--line);position:relative}
+.agora-landing .step:last-child{border-right:none}
+@media(max-width:860px){.agora-landing .step{border-right:none;border-bottom:1px solid var(--line)}.agora-landing .step:last-child{border-bottom:none}}
+.agora-landing .step .st{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--orange);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.agora-landing .step .st .n{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--grad-soft);border:1px solid rgba(255,154,20,.25);color:var(--gold);font-weight:600}
+.agora-landing .step h4{font-size:17px;font-weight:600;margin-bottom:9px;letter-spacing:-.01em}
+.agora-landing .step p{color:var(--muted);font-size:14px}
+.agora-landing .step .commit{color:var(--cyan)}
+
+.agora-landing .verify-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+@media(max-width:920px){.agora-landing .verify-grid{grid-template-columns:1fr;gap:32px}}
+.agora-landing .verify-copy h2{font-size:clamp(28px,3.6vw,44px);letter-spacing:-.02em;line-height:1.08;font-weight:700;margin-bottom:18px}
+.agora-landing .verify-copy h2 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.agora-landing .verify-copy p{color:var(--muted);font-size:16.5px;margin-bottom:18px;max-width:50ch}
+.agora-landing .verify-list{list-style:none;display:flex;flex-direction:column;gap:14px;margin-top:24px}
+.agora-landing .verify-list li{display:flex;gap:13px;align-items:flex-start;font-size:15px;color:var(--text)}
+.agora-landing .verify-list li span{color:var(--muted)}
+.agora-landing .check{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--cyan-dim);border:1px solid rgba(59,211,224,.3);margin-top:1px}
+
+.agora-landing .terminal{background:#070C16;border:1px solid var(--line-2);border-radius:16px;overflow:hidden;
+  box-shadow:0 40px 80px -34px rgba(0,0,0,.8)}
+.agora-landing .term-top{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.agora-landing .term-top .dots{display:flex;gap:7px}
+.agora-landing .term-top .dots i{width:11px;height:11px;border-radius:50%;background:#222b3d}
+.agora-landing .term-top .title{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--faint);margin-left:6px}
+.agora-landing .term-body{padding:20px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65}
+.agora-landing .term-body .json{color:var(--muted);background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word;margin-bottom:14px}
+.agora-landing .term-body .json .key{color:var(--cyan)}
+.agora-landing .term-body .json .val{color:var(--gold)}
+.agora-landing .hashline{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.agora-landing .hashrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.015)}
+.agora-landing .hashrow .lbl{color:var(--faint);font-size:11.5px;white-space:nowrap}
+.agora-landing .hashrow .v{color:var(--text);font-size:12px;word-break:break-all;text-align:right}
+.agora-landing .hashrow.match{border-color:rgba(59,211,224,.4);background:rgba(59,211,224,.06)}
+.agora-landing .hashrow .v.computing{color:var(--orange)}
+.agora-landing .verify-btn{width:100%;justify-content:center}
+.agora-landing .verdict{display:none;align-items:center;gap:10px;margin-top:14px;padding:13px;border-radius:10px;
+  background:rgba(59,211,224,.08);border:1px solid rgba(59,211,224,.35);color:var(--cyan);font-size:13px;font-family:'IBM Plex Mono',monospace}
+.agora-landing .verdict.show{display:flex;animation:al-pop .4s var(--ease)}
+@keyframes al-pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.agora-landing .term-foot{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:12px}
+.agora-landing .term-foot a{color:var(--cyan)}
+.agora-landing .term-foot a:hover{text-decoration:underline}
+
+.agora-landing .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media(max-width:860px){.agora-landing .stats{grid-template-columns:repeat(2,1fr)}}
+.agora-landing .stat{border:1px solid var(--line);border-radius:16px;padding:28px 24px;background:var(--surface)}
+.agora-landing .stat .v{font-size:clamp(34px,4vw,46px);font-weight:700;letter-spacing:-.02em;line-height:1;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.agora-landing .stat.cyan .v{background:linear-gradient(100deg,#3BD3E0,#7af0dd);-webkit-background-clip:text;background-clip:text;color:transparent}
+.agora-landing .stat .l{color:var(--muted);font-size:14px;margin-top:10px}
+.agora-landing .stat .s{color:var(--faint);font-size:12px;margin-top:4px;font-family:'IBM Plex Mono',monospace}
+
+.agora-landing .built{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:860px){.agora-landing .built{grid-template-columns:1fr}}
+.agora-landing .tech{border:1px solid var(--line);border-radius:16px;padding:26px 24px;background:var(--surface);display:flex;gap:16px;align-items:flex-start}
+.agora-landing .tech .ic{width:44px;height:44px;border-radius:11px;flex:none;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid var(--line-2);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px}
+.agora-landing .tech h4{font-size:16px;font-weight:600;margin-bottom:6px}
+.agora-landing .tech p{color:var(--muted);font-size:14px}
+.agora-landing .tech .ic.usdc{color:#2775CA;background:rgba(39,117,202,.12);border-color:rgba(39,117,202,.3)}
+.agora-landing .tech .ic.arc{color:var(--gold);background:var(--grad-soft);border-color:rgba(255,154,20,.3)}
+.agora-landing .tech .ic.git{color:var(--text)}
+
+.agora-landing .cta-final{position:relative;border:1px solid var(--line-2);border-radius:24px;overflow:hidden;
+  padding:64px 48px;text-align:center;
+  background:linear-gradient(160deg,rgba(20,28,48,.9),rgba(13,20,36,.7))}
+.agora-landing .cta-final::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+  background:radial-gradient(ellipse 60% 100% at 50% 0%,rgba(255,122,26,.25),transparent 70%)}
+.agora-landing .cta-final>*{position:relative;z-index:1}
+.agora-landing .cta-final h2{font-size:clamp(28px,4vw,46px);letter-spacing:-.025em;font-weight:700;margin-bottom:16px;line-height:1.05}
+.agora-landing .cta-final p{color:var(--muted);font-size:17px;max-width:48ch;margin:0 auto 30px}
+.agora-landing .cta-final .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+.agora-landing footer{border-top:1px solid var(--line);margin-top:96px;padding:40px 0 56px}
+.agora-landing .foot-in{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.agora-landing .foot-in .left{display:flex;align-items:center;gap:11px;color:var(--muted);font-size:14px}
+.agora-landing .foot-links{display:flex;gap:24px;font-size:14px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.agora-landing .foot-links a:hover{color:var(--text)}
+
+.agora-landing .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.agora-landing .reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.agora-landing .reveal{opacity:1;transform:none;transition:none}.agora-landing .live-dot::after{animation:none}}
