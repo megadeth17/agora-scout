@@ -22,6 +22,17 @@ function MarketIcon({ regime, size = 11 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d={d} /></svg>;
 }
 
+// Regime tag — label wrapped in a real nowrap span so the flex layout
+// can never vertical-stack the text (anonymous-flex-item quirk).
+function Tag({ regime }) {
+  return (
+    <span className={`mtag ${rclass(regime)}`}>
+      <MarketIcon regime={regime} />
+      <span style={{ whiteSpace: 'nowrap' }}>{regime || '—'}</span>
+    </span>
+  );
+}
+
 /* ---------- donut ---------- */
 function Donut({ usdc, usyc, yld, total }) {
   const R = 76, C = 2 * Math.PI * R, gap = 3;
@@ -164,7 +175,7 @@ export default function App() {
               return (
                 <div className={`log-item ${i === 0 ? 'active' : ''}`} key={d.id ?? i}>
                   <div className="li-top">
-                    <span className={`mtag ${rclass(d.regime)}`}><MarketIcon regime={d.regime} />{d.regime}</span>
+                    <Tag regime={d.regime} />
                     {d.id != null && <span className="li-id"><b>#{d.id}</b></span>}
                   </div>
                   <div className="li-time">{timeAgo(d.decided_at)}</div>
@@ -266,7 +277,7 @@ export default function App() {
                 const f = r.from_allocation || {}, t = r.to_allocation || {};
                 return (
                   <div className="hist-row" key={r.id ?? i}>
-                    <div className="hl"><span className={`mtag ${rclass(r.trigger_regime)}`}><MarketIcon regime={r.trigger_regime} />{r.trigger_regime}</span><span className="htime">{timeAgo(r.executed_at)}</span></div>
+                    <div className="hl"><Tag regime={r.trigger_regime} /><span className="htime">{timeAgo(r.executed_at)}</span></div>
                     <div className="changes">
                       <Chg cls="cash" name="USDC" from={f.usdc_pct} to={t.usdc_pct} />
                       <Chg cls="tbill" name="USYC" from={f.usyc_pct} to={t.usyc_pct} />
