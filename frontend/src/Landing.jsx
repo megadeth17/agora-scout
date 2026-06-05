@@ -110,7 +110,7 @@ export default function Landing() {
       <header className="nav">
         <div className="wrap nav-in">
           <Link className="brand" to="/" aria-label="Agora Scout home">
-            <img className="mark" src="/favicon-64.png" alt="" width={30} height={30} />
+            <img className="mark" src="/favicon-180.png" alt="" width={40} height={40} />
             <span>Agora <b className="o">Scout</b></span>
           </Link>
           <nav className="nav-links">
@@ -319,7 +319,7 @@ export default function Landing() {
       <footer>
         <div className="wrap foot-in">
           <div className="left">
-            <img src="/favicon-64.png" alt="" width={22} height={22} style={{ borderRadius: 6 }} />
+            <img src="/favicon-180.png" alt="" width={26} height={26} style={{ borderRadius: 7, filter: 'drop-shadow(0 0 10px rgba(255,138,20,.45))' }} />
             <span>Agora Scout — proof-first agent for digital dollars.</span>
           </div>
           <nav className="foot-links">

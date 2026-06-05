@@ -53,7 +53,10 @@
   border-bottom:1px solid var(--line)}
 .agora-landing .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
 .agora-landing .brand{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-.01em;font-size:18px;white-space:nowrap}
-.agora-landing .brand .mark{width:30px;height:30px;flex:none;border-radius:8px}
+.agora-landing .brand .mark{width:40px;height:40px;flex:none;border-radius:10px;
+  filter:drop-shadow(0 0 14px rgba(255,138,20,.55));
+  background:radial-gradient(circle at 50% 45%,rgba(255,154,20,.14),transparent 70%)}
+.agora-landing .brand{font-size:19px}
 .agora-landing .brand b{font-weight:700}
 .agora-landing .brand .o{color:var(--gold)}
 .agora-landing .nav-links{display:flex;align-items:center;gap:30px}
