@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL || '';
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/feed';
+const WS_URL = import.meta.env.VITE_WS_URL ||
+  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/feed`;
 
 export function usePortfolioData() {
   const [portfolio, setPortfolio] = useState(null);
