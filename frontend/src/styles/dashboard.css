@@ -61,12 +61,12 @@
 @media(max-width:1100px){.agora-dash .kpi .l,.agora-dash .brand .sub{display:none}.agora-dash .kpis{gap:8px}}
 @media(max-width:780px){.agora-dash .arc-pill,.agora-dash .simple-link{display:none}}
 
-.agora-dash .app{display:grid;grid-template-columns:312px 1fr;position:relative;z-index:1;min-height:calc(100vh - 64px)}
+.agora-dash .app{display:grid;grid-template-columns:312px minmax(0,1fr);position:relative;z-index:1;min-height:calc(100vh - 64px)}
 @media(max-width:1080px){.agora-dash .app{grid-template-columns:1fr}}
 
-.agora-dash .side{border-right:1px solid var(--line);background:rgba(8,13,24,.55);display:flex;flex-direction:column;
+.agora-dash aside.side{border-right:1px solid var(--line);background:rgba(8,13,24,.55);display:flex;flex-direction:column;
   position:sticky;top:64px;height:calc(100vh - 64px)}
-@media(max-width:1080px){.agora-dash .side{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+@media(max-width:1080px){.agora-dash aside.side{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
 .agora-dash .side-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
 .agora-dash .side-head .t{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:9px}
 .agora-dash .side-head .cnt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint)}
@@ -81,6 +81,25 @@
 .agora-dash .mtag{display:inline-flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 9px;border-radius:7px;white-space:nowrap;flex:none;height:25px;min-height:25px;max-height:25px;box-sizing:border-box;align-self:flex-start;overflow:hidden}
 .agora-dash .mtag svg{flex:none;height:11px;width:11px}
 .agora-dash .mtag span{flex:none}
+
+/* Guard: force row layout on every inline-flex tag/pill/signal that holds text.
+   A phantom intrinsic-sizing artifact at wide viewports otherwise collapses these
+   to min-content width and stacks their text vertically (see the SIDEWAYS bug). */
+.agora-dash .market-flag,
+.agora-dash .sig,
+.agora-dash .arc-pill,
+.agora-dash .tag-live,
+.agora-dash .verified,
+.agora-dash .vf,
+.agora-dash .summ,
+.agora-dash .yield-note,
+.agora-dash .rl,
+.agora-dash .vbox-head,
+.agora-dash .ab-name,
+.agora-dash .dl-row .nm,
+.agora-dash .alloc-legend span,
+.agora-dash .safe-meter .lg span,
+.agora-dash .kpi { flex-direction: row !important; flex-wrap: nowrap; min-width: 0; white-space: nowrap; }
 .agora-dash .mtag.bear{color:var(--risk-red);background:rgba(255,106,90,.12);border:1px solid rgba(255,106,90,.25)}
 .agora-dash .mtag.bull{color:var(--safe);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25)}
 .agora-dash .mtag.side{color:var(--gold);background:rgba(255,194,74,.12);border:1px solid rgba(255,194,74,.25)}
@@ -101,7 +120,7 @@
 .agora-dash .p-head .ttl{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:9px}
 .agora-dash .p-head .meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint)}
 
-.agora-dash .status-row{display:grid;grid-template-columns:1.45fr 1fr;gap:22px}
+.agora-dash .status-row{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:22px;align-items:stretch}
 @media(max-width:980px){.agora-dash .status-row{grid-template-columns:1fr}}
 .agora-dash .safe-card{position:relative;padding:26px 26px 24px}
 .agora-dash .market-flag{display:inline-flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.05em;padding:6px 12px;border-radius:9px;margin-bottom:20px}
@@ -141,7 +160,7 @@
 .agora-dash .dl-row b{font-family:'IBM Plex Mono',monospace;font-size:14px}
 .agora-dash .dl-row.cash b{color:var(--cash)} .agora-dash .dl-row.tbill b{color:var(--tbill)} .agora-dash .dl-row.yield b{color:var(--yield)}
 
-.agora-dash .dec-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:0}
+.agora-dash .dec-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:0;align-items:stretch}
 @media(max-width:980px){.agora-dash .dec-grid{grid-template-columns:1fr}}
 .agora-dash .dec-left{padding:22px 24px;border-right:1px solid var(--line)}
 @media(max-width:980px){.agora-dash .dec-left{border-right:none;border-bottom:1px solid var(--line)}}

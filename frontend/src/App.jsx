@@ -154,7 +154,7 @@ export default function App() {
           <div className="kpi reb"><span className="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 2l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg></span><div><div className="v">{kpi(stats?.total_rebalances)}</div><div className="l">Rebalances</div></div></div>
           <div className="kpi tod"><span className="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></span><div><div className="v">{kpi(stats?.decisions_today)}</div><div className="l">Today</div></div></div>
         </div>
-        <span className="arc-pill"><span className="live-dot" />Live on Arc testnet</span>
+        <span className="arc-pill"><span className="live-dot" /><span style={{ whiteSpace: 'nowrap' }}>Live on Arc testnet</span></span>
         <button className="btn-run" onClick={runAgent} disabled={running}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>{running ? 'Running…' : 'Run Agent'}
         </button>
@@ -192,7 +192,7 @@ export default function App() {
           {/* STATUS ROW */}
           <div className="status-row">
             <section className="panel safe-card reveal in">
-              <span className={`market-flag ${rclass(regime)}`}><span className={`live-dot ${regime === 'BEAR' ? 'red' : ''}`} />{flag}</span>
+              <span className={`market-flag ${rclass(regime)}`}><span className={`live-dot ${regime === 'BEAR' ? 'red' : ''}`} /><span style={{ whiteSpace: 'nowrap' }}>{flag}</span></span>
               <div className="verdict-big">
                 <div className="shield"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--safe)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg></div>
                 <div>
