@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS rebalances (
     tx_hash TEXT,
     decision_hash TEXT,
     anchored INTEGER DEFAULT 0,
+    transfer_tx_hash TEXT,
+    transfer_amount_usdc REAL,
+    transfer_direction TEXT,
     executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """
@@ -55,6 +58,9 @@ REBALANCE_MIGRATIONS = [
     "ALTER TABLE rebalances ADD COLUMN decision_hash TEXT",
     "ALTER TABLE rebalances ADD COLUMN anchored INTEGER DEFAULT 0",
     "ALTER TABLE rebalances ADD COLUMN decision_payload TEXT",
+    "ALTER TABLE rebalances ADD COLUMN transfer_tx_hash TEXT",
+    "ALTER TABLE rebalances ADD COLUMN transfer_amount_usdc REAL",
+    "ALTER TABLE rebalances ADD COLUMN transfer_direction TEXT",
 ]
 
 CREATE_VISITORS = """
@@ -142,9 +148,11 @@ async def save_rebalance(rebalance: dict) -> int:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         cursor = await db.execute(
             """INSERT INTO rebalances
-               (from_allocation, to_allocation, trigger_regime, status, tx_hash, decision_hash, decision_payload, anchored, executed_at)
+               (from_allocation, to_allocation, trigger_regime, status, tx_hash, decision_hash, decision_payload, anchored,
+                transfer_tx_hash, transfer_amount_usdc, transfer_direction, executed_at)
                VALUES
-               (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :decision_hash, :decision_payload, :anchored, :executed_at)""",
+               (:from_allocation, :to_allocation, :trigger_regime, :status, :tx_hash, :decision_hash, :decision_payload, :anchored,
+                :transfer_tx_hash, :transfer_amount_usdc, :transfer_direction, :executed_at)""",
             {
                 "from_allocation": json.dumps(rebalance.get("from_allocation", {})),
                 "to_allocation": json.dumps(rebalance.get("to_allocation", {})),
@@ -154,6 +162,9 @@ async def save_rebalance(rebalance: dict) -> int:
                 "decision_hash": rebalance.get("decision_hash", ""),
                 "decision_payload": rebalance.get("decision_payload", ""),
                 "anchored": rebalance.get("anchored", 0),
+                "transfer_tx_hash": rebalance.get("transfer_tx_hash", ""),
+                "transfer_amount_usdc": rebalance.get("transfer_amount_usdc"),
+                "transfer_direction": rebalance.get("transfer_direction", ""),
                 "executed_at": datetime.utcnow().isoformat(),
             },
         )
@@ -183,6 +194,11 @@ async def get_rebalances(limit: int = 20) -> list:
                 d["arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['tx_hash']}"
             else:
                 d["arcscan_url"] = None
+            # Real native-USDC capital move (live mode) — its own Arcscan link
+            if d.get("transfer_tx_hash"):
+                d["transfer_arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['transfer_tx_hash']}"
+            else:
+                d["transfer_arcscan_url"] = None
             # Keep the list response lean — full payload is served by /api/verify
             d.pop("decision_payload", None)
             result.append(d)

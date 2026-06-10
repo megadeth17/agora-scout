@@ -94,6 +94,7 @@ export default function App() {
   const safe = Math.round(usdc + usyc), risk = Math.round(yld);
   const conf = latest?.confidence ?? 55;
   const anchored = rebalances.find(r => r.arcscan_url && r.id != null);
+  const moved = rebalances.find(r => r.transfer_arcscan_url);  // real native-USDC capital move
   const lastReb = rebalances[0];
   const from = lastReb?.from_allocation || {};
   const to = lastReb?.to_allocation || { usdc_pct: usdc, usyc_pct: usyc, yield_pct: yld };
@@ -155,7 +156,7 @@ export default function App() {
           <div className="kpi tod"><span className="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></span><div><div className="v">{kpi(stats?.decisions_today)}</div><div className="l">Today</div></div></div>
         </div>
         <span className="arc-pill"><span className="live-dot" /><span style={{ whiteSpace: 'nowrap' }}>Live on Arc testnet</span></span>
-        <button className="btn-run" onClick={runAgent} disabled={running}>
+        <button type="button" className="btn-run" onClick={runAgent} disabled={running}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>{running ? 'Running…' : 'Run Agent'}
         </button>
       </div>
@@ -258,9 +259,13 @@ export default function App() {
                   <div className={`vrow ${vState === 'ok' ? 'match' : ''}`}><span className="k">on-chain hash</span><span className="v">{onchainHash ? short(onchainHash) : '0x…'}</span></div>
                   <div className={`vrow ${vState === 'ok' ? 'match' : ''}`}><span className="k">recomputed</span><span className={`v ${vState === 'loading' ? 'computing' : ''}`}>{vState === 'loading' ? shuffle : vData?.recomputed_hash ? short(vData.recomputed_hash) : '— tap verify —'}</span></div>
                   <div className="vrow"><span className="k">anchored on Arc</span><span className="v anchored">✓ {anchored ? 'confirmed' : '—'}</span></div>
+                  {moved && (
+                    <div className="vrow"><span className="k">real USDC moved</span><span className="v anchored">{moved.transfer_amount_usdc != null ? `${moved.transfer_amount_usdc.toFixed(2)} USDC` : '✓'}{moved.transfer_direction ? ` · ${moved.transfer_direction.replace('->', ' → ')}` : ''}</span></div>
+                  )}
                   <button className="btn-verify" onClick={verify} disabled={!anchored || vState === 'loading'}>{vState === 'ok' ? 'Verified ✓' : vState === 'loading' ? 'Recomputing…' : 'Recompute & verify'} {vState !== 'ok' && <span className="arr">→</span>}</button>
                   {vState === 'ok' && <div className="vverdict"><span>✓</span><span>Match. This decision was committed on-chain <b>before</b> any USDC moved — it can't be faked after the fact.</span></div>}
-                  {anchored?.arcscan_url && <a className="arcscan" href={anchored.arcscan_url} target="_blank" rel="noopener noreferrer">Open on Arcscan ↗</a>}
+                  {anchored?.arcscan_url && <a className="arcscan" href={anchored.arcscan_url} target="_blank" rel="noopener noreferrer">Commit tx on Arcscan ↗</a>}
+                  {moved?.transfer_arcscan_url && <a className="arcscan" href={moved.transfer_arcscan_url} target="_blank" rel="noopener noreferrer">USDC transfer on Arcscan ↗</a>}
                 </div>
               </div>
             </div>
@@ -285,7 +290,8 @@ export default function App() {
                     </div>
                     <div className="hv">
                       {r.arcscan_url && r.id != null ? <HistVerify id={r.id} /> : <span className="vf" style={{ color: 'var(--faint)', fontSize: 11.5, fontFamily: 'var(--font-mono)' }}>{r.status}</span>}
-                      {r.arcscan_url && <a href={r.arcscan_url} target="_blank" rel="noopener noreferrer">Arcscan ↗</a>}
+                      {r.arcscan_url && <a href={r.arcscan_url} target="_blank" rel="noopener noreferrer">commit ↗</a>}
+                      {r.transfer_arcscan_url && <a href={r.transfer_arcscan_url} target="_blank" rel="noopener noreferrer" title={r.transfer_amount_usdc != null ? `${r.transfer_amount_usdc.toFixed(2)} USDC moved` : 'USDC moved'}>💵 USDC ↗</a>}
                     </div>
                   </div>
                 );

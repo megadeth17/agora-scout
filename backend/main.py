@@ -5,6 +5,7 @@ Runs the AI agent loop in background and serves REST + WebSocket API.
 import asyncio
 import json
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -146,10 +147,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Agora Scout", version="1.0.0", lifespan=lifespan)
 
+# CORS: the dashboard calls the API same-origin (Vite proxies /api → backend),
+# so it never exercises CORS. Restrict to known hosts + local dev; override via
+# ALLOWED_ORIGINS (comma-separated) if the API is ever served cross-origin.
+_default_origins = (
+    "https://agora-scout.tail127286.ts.net,"
+    "http://localhost:3003,http://localhost:5173"
+)
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -323,13 +335,27 @@ async def websocket_feed(websocket: WebSocket):
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
-@app.get("/health")
-async def health() -> dict:
+def _health_payload() -> dict:
     return {
         "status": "ok",
         "ws_clients": len(ws_clients),
         "agent_interval_seconds": config.AGENT_INTERVAL_SECONDS,
+        "execution_mode": config.EXECUTION_MODE,
+        "live_transfers": executor._transfer.enabled,
+        "anchoring_enabled": verifier.enabled,
     }
+
+
+@app.get("/health")
+async def health() -> dict:
+    return _health_payload()
+
+
+# Same payload under /api so it's reachable through the frontend proxy
+# (Vite proxies only /api and /ws to the backend — bare /health hits the SPA).
+@app.get("/api/health")
+async def api_health() -> dict:
+    return _health_payload()
 
 
 if __name__ == "__main__":

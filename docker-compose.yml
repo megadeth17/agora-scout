@@ -1,12 +1,10 @@
-version: "3.9"
-
 services:
   backend:
     build: .
     container_name: agora-scout-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - .env
     volumes:
@@ -17,18 +15,15 @@ services:
       - 8.8.8.8
       - 1.1.1.1
 
+  # Production static build served by nginx (replaces the Vite dev server).
+  # nginx proxies /api and /ws to the backend over the compose network.
   frontend:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: agora-scout-frontend
     restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     ports:
-      - "3003:3003"
-    command: sh -c "npm install && npm run dev"
-    environment:
-      - BACKEND_HOST=backend
+      - "3003:80"
     depends_on:
       - backend

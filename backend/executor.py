@@ -13,6 +13,7 @@ import aiohttp
 import config
 import database as db
 from chain import ArcAnchor
+from arc_transfer import ArcTransfer
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class CircleExecutor:
         self._wallet_id: str | None = None
         self._simulated_balance = config.DEFAULT_USDC_AMOUNT
         self._anchor = ArcAnchor()
+        self._transfer = ArcTransfer()  # real native-USDC moves when EXECUTION_MODE=live
 
     async def get_or_create_wallet(self) -> str | None:
         """Get existing wallet or create one via Circle Wallets API."""
@@ -81,6 +83,13 @@ class CircleExecutor:
 
     async def get_usdc_balance(self) -> float:
         """Query USDC balance. Falls back to simulated balance."""
+        # Live mode: the real portfolio value is the combined on-chain balance
+        # of the treasury + vault wallets on Arc.
+        if self._transfer.enabled:
+            bals = await self._transfer.balances()
+            if bals:
+                return bals["total_usdc"]
+
         if not config.CIRCLE_API_KEY or (self._wallet_id or "").startswith("sim_"):
             return self._simulated_balance
 
@@ -152,6 +161,27 @@ class CircleExecutor:
             decision_hash = ArcAnchor.hash_decision(anchor_payload)
             anchored = False
 
+        # Act: in live mode, move REAL native USDC on Arc so the vault holds the
+        # target yield allocation. The transfer happens AFTER the on-chain commit
+        # above — capital only moves once the decision is provably anchored.
+        transfer = None
+        if self._transfer.enabled:
+            transfer = await self._transfer.rebalance_capital(to_alloc["yield_pct"])
+            if transfer and not transfer.get("skipped"):
+                logger.info(
+                    "Live capital move: %.4f USDC %s tx=%s",
+                    transfer.get("amount_usdc", 0),
+                    transfer.get("direction"),
+                    transfer.get("tx_hash"),
+                )
+            # Real combined balance reflects the true portfolio value post-move.
+            if transfer and transfer.get("total_usdc") is not None:
+                total_value = transfer["total_usdc"]
+
+        transfer_tx_hash = transfer.get("tx_hash") if transfer else None
+        transfer_amount = transfer.get("amount_usdc") if transfer else None
+        transfer_direction = transfer.get("direction") if transfer else None
+
         # Update portfolio state in DB (act, after the on-chain commit)
         new_state = {
             "usdc_pct": to_alloc["usdc_pct"],
@@ -172,15 +202,25 @@ class CircleExecutor:
             "decision_hash": decision_hash,
             "decision_payload": canonical_payload,
             "anchored": 1 if anchored else 0,
+            "transfer_tx_hash": transfer_tx_hash,
+            "transfer_amount_usdc": transfer_amount,
+            "transfer_direction": transfer_direction,
         })
 
-        logger.info("Rebalance %d executed: tx=%s anchored=%s", rebalance_id, tx_hash, anchored)
+        logger.info(
+            "Rebalance %d executed: anchor=%s anchored=%s transfer=%s",
+            rebalance_id, tx_hash, anchored, transfer_tx_hash,
+        )
         return {
             "id": rebalance_id,
             "tx_hash": tx_hash,
             "decision_hash": decision_hash,
             "anchored": anchored,
             "arcscan_url": anchor["arcscan_url"] if anchor else None,
+            "transfer_tx_hash": transfer_tx_hash,
+            "transfer_amount_usdc": transfer_amount,
+            "transfer_direction": transfer_direction,
+            "transfer_arcscan_url": transfer.get("arcscan_url") if transfer else None,
             "from_allocation": from_alloc,
             "to_allocation": to_alloc,
             "status": "executed",

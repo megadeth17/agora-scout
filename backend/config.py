@@ -9,9 +9,15 @@ load_dotenv()
 
 # Arc
 ARC_RPC_URL = os.getenv("ARC_RPC", "") or "https://rpc.testnet.arc.network"
-ARC_CHAIN_ID = 5042002
+ARC_CHAIN_ID = int(os.getenv("ARC_CHAIN_ID", "5042002"))
 ARC_PRIVATE_KEY = os.getenv("ARC_PRIVATE_KEY", "")
 ARCSCAN_TX_BASE = "https://testnet.arcscan.app/tx"
+
+# Execution mode: "simulate" (state-only rebalance) or "live" (real native-USDC
+# transfers on Arc between the treasury and vault wallets). Default simulate.
+EXECUTION_MODE = os.getenv("EXECUTION_MODE", "simulate").strip().lower()
+ARC_VAULT_PRIVATE_KEY = os.getenv("ARC_VAULT_PRIVATE_KEY", "")
+ARC_VAULT_ADDRESS = os.getenv("ARC_VAULT_ADDRESS", "")
 
 # Circle
 CIRCLE_API_KEY = os.getenv("CIRCLE_API_KEY", "")

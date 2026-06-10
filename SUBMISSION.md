@@ -25,10 +25,11 @@ Agora Scout is an autonomous AI portfolio manager built on Arc. It runs a contin
 The agent cycles every 10 minutes autonomously, with a manual trigger button for on-demand analysis.
 
 ## Circle Tools Used
-- **USDC** — base settlement currency for all portfolio operations
-- **USYC** — risk-off allocation target (tokenized money market, yield on idle capital)
-- **Wallets API** — embedded wallet management for the agent's portfolio
-- **Gateway** — unified cross-chain balance view and rebalancing
+- **USDC (native on Arc)** — the treasury itself; moved as real native-USDC value transfers on every rebalance
+- **Arc L1** — settlement for the decision commit (anchor tx) and the capital move (transfer tx)
+- **Wallets API** — wallet provisioning and balance reads
+- **USDC-native gas** — Arc pays gas in USDC; no separate paymaster/gas token
+- **USYC** — intended mainnet T-bill instrument for the safe bucket (no testnet contract; modeled within the safe allocation on testnet)
 
 ## Tech Stack
 - **Backend:** Python, FastAPI, aiohttp, aiosqlite

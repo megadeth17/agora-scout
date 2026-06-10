@@ -96,7 +96,9 @@ class ArcAnchor:
             return None
 
         addr = self._account.address
-        nonce = w3.eth.get_transaction_count(addr)
+        # "pending" so a follow-up tx (e.g. the live capital transfer) from the
+        # same account doesn't collide with this still-unmined anchor's nonce.
+        nonce = w3.eth.get_transaction_count(addr, "pending")
 
         # Zero-value self-transfer; decision hash carried in calldata = proof.
         tx = {
