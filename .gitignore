@@ -7,3 +7,7 @@ node_modules/
 data/
 dist/
 frontend/dist/
+# private working files — contain secrets/PII, never commit
+SESSION-HANDOFF.md
+GRANT-SUBMISSION-ANSWERS.md
+_vps_snapshot/

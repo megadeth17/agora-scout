@@ -35,7 +35,7 @@ Open http://localhost:3003
 ## Deploy to VPS
 
 ```bash
-ssh root@178.104.36.180
+ssh root@<your-vps-ip>
 git clone https://github.com/YOUR_USER/agora-scout.git
 cd agora-scout
 cp .env.example .env   # fill secrets

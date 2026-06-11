@@ -56,5 +56,5 @@ https://rehab-attached-lincoln-arch.trycloudflare.com
 ## Team
 Solo builder — @mega2608
 
-## Contact Email
-cesarasp14business@gmail.com
+## Contact
+@mega2608 (see GitHub profile for contact)
