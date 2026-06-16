@@ -306,6 +306,7 @@ export default function App() {
             <span><b style={{ color: 'var(--text)' }}>{traction?.total_decisions ?? '—'}</b> decisions</span><span className="sep">·</span>
             <span><b style={{ color: 'var(--text)' }}>{traction?.total_rebalances ?? '—'}</b> rebalances</span><span className="sep">·</span>
             <span className="on">{traction?.onchain_anchored ?? '—'} anchored on Arc</span><span className="sep">·</span>
+            <span><b style={{ color: 'var(--cyan)' }}>{traction?.total_accounts ?? '—'}</b> treasuries managed</span><span className="sep">·</span>
             <span className="grad">Agora Agents Hackathon 2026</span>
           </div>
         </main>
