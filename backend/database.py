@@ -73,6 +73,32 @@ CREATE TABLE IF NOT EXISTS visitors (
 )
 """
 
+# Multi-tenant self-serve accounts (testnet). Keys stored plaintext — pilot only.
+CREATE_ACCOUNTS = """
+CREATE TABLE IF NOT EXISTS accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT,
+    secret TEXT,
+    cash_addr TEXT NOT NULL,
+    cash_key TEXT NOT NULL,
+    yield_addr TEXT NOT NULL,
+    yield_key TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+CREATE_ACCOUNT_REBALANCES = """
+CREATE TABLE IF NOT EXISTS account_rebalances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    yield_pct REAL,
+    tx_hash TEXT,
+    direction TEXT,
+    amount_usdc REAL,
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 
 async def init_db() -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
@@ -80,6 +106,8 @@ async def init_db() -> None:
         await db.execute(CREATE_REGIME_DECISIONS)
         await db.execute(CREATE_REBALANCES)
         await db.execute(CREATE_VISITORS)
+        await db.execute(CREATE_ACCOUNTS)
+        await db.execute(CREATE_ACCOUNT_REBALANCES)
         # Apply idempotent migrations (ignore "duplicate column" on existing DBs)
         for migration in REBALANCE_MIGRATIONS:
             try:
@@ -224,6 +252,68 @@ async def record_visit(ip: str, path: str = "/", user_agent: str = "") -> None:
         await db.commit()
 
 
+async def save_account(account: dict) -> int:
+    async with aiosqlite.connect(DATABASE_PATH, timeout=30.0) as db:
+        await db.execute("PRAGMA busy_timeout=30000")
+        cursor = await db.execute(
+            """INSERT INTO accounts (label, secret, cash_addr, cash_key, yield_addr, yield_key, created_at)
+               VALUES (:label, :secret, :cash_addr, :cash_key, :yield_addr, :yield_key, :created_at)""",
+            {**account, "created_at": datetime.utcnow().isoformat()},
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_account(account_id: int) -> dict | None:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM accounts WHERE id = ?", (account_id,))
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def get_accounts() -> list:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM accounts ORDER BY id ASC")
+        return [dict(r) for r in await cursor.fetchall()]
+
+
+async def save_account_rebalance(reb: dict) -> int:
+    async with aiosqlite.connect(DATABASE_PATH, timeout=30.0) as db:
+        await db.execute("PRAGMA busy_timeout=30000")
+        cursor = await db.execute(
+            """INSERT INTO account_rebalances (account_id, yield_pct, tx_hash, direction, amount_usdc, executed_at)
+               VALUES (:account_id, :yield_pct, :tx_hash, :direction, :amount_usdc, :executed_at)""",
+            {**reb, "executed_at": datetime.utcnow().isoformat()},
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_account_rebalances(account_id: int, limit: int = 20) -> list:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM account_rebalances WHERE account_id = ? ORDER BY id DESC LIMIT ?",
+            (account_id, limit),
+        )
+        from config import ARCSCAN_TX_BASE
+        out = []
+        for r in await cursor.fetchall():
+            d = dict(r)
+            d["arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['tx_hash']}" if d.get("tx_hash") else None
+            out.append(d)
+        return out
+
+
+async def count_accounts() -> dict:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        n = (await (await db.execute("SELECT COUNT(*) FROM accounts")).fetchone())[0]
+        r = (await (await db.execute("SELECT COUNT(*) FROM account_rebalances")).fetchone())[0]
+        return {"total_accounts": n, "total_account_rebalances": r}
+
+
 async def get_traction() -> dict:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         cursor = await db.execute("SELECT COUNT(*) FROM visitors")
@@ -256,6 +346,12 @@ async def get_traction() -> dict:
         )
         total_triggers = (await cursor.fetchone())[0]
 
+        cursor = await db.execute("SELECT COUNT(*) FROM accounts")
+        total_accounts = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM account_rebalances")
+        total_account_rebalances = (await cursor.fetchone())[0]
+
     return {
         "total_page_views": total_views,
         "unique_visitors": unique_visitors,
@@ -265,6 +361,8 @@ async def get_traction() -> dict:
         "total_rebalances": total_rebalances,
         "onchain_anchored": onchain_anchored,
         "total_manual_triggers": total_triggers,
+        "total_accounts": total_accounts,
+        "total_account_rebalances": total_account_rebalances,
     }
 
 

@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 import config
 import database as db
+import accounts
 from agent import AgoraAgent
 from executor import CircleExecutor
 from chain import ArcAnchor
@@ -120,6 +121,17 @@ async def agent_loop() -> None:
                     "top_yields": decision.get("market", {}).get("yields", [])[:3],
                 },
             })
+
+            # Multi-tenant: rebalance every funded user account toward the same
+            # regime target. Additive — never blocks the showcase loop.
+            try:
+                moved = await accounts.rebalance_all_funded(
+                    decision.get("recommended_yield_pct", 0) or 0
+                )
+                if moved:
+                    logger.info("Rebalanced %d funded user account(s)", moved)
+            except Exception as exc:
+                logger.error("Account rebalance pass error: %s", exc)
 
         except asyncio.CancelledError:
             break
@@ -307,6 +319,58 @@ async def trigger_cycle(request: Request) -> dict:
             total_value=balance,
         )
     return {"decision": decision, "rebalance": rebalance}
+
+
+# ── Multi-tenant accounts (self-serve) ────────────────────────────────────────
+
+@app.post("/api/account")
+async def create_account(request: Request) -> dict:
+    """Create a self-serve account. Returns deposit address + secret (save it)."""
+    ip = _get_client_ip(request)
+    allowed, retry_after = _check_rate_limit(ip)
+    if not allowed:
+        return JSONResponse(status_code=429,
+                            content={"error": "Too many requests", "retry_after_seconds": retry_after})
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    label = (body or {}).get("label", "")
+    return await accounts.create_account(label)
+
+
+@app.get("/api/account/{account_id}")
+async def get_account(account_id: int) -> dict:
+    """Live on-chain state of a user account + its recent rebalances."""
+    state = await accounts.account_state(account_id)
+    if not state:
+        return JSONResponse(status_code=404, content={"error": "account not found"})
+    state["rebalances"] = await db.get_account_rebalances(account_id, limit=15)
+    return state
+
+
+@app.post("/api/account/{account_id}/withdraw")
+async def withdraw_account(account_id: int, request: Request) -> dict:
+    """Withdraw the account's full balance to a user-specified address (needs secret)."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    to_address = (body or {}).get("to_address", "").strip()
+    secret = (body or {}).get("secret", "").strip()
+    if not to_address:
+        return JSONResponse(status_code=400, content={"error": "to_address required"})
+    res = await accounts.withdraw(account_id, to_address, secret)
+    if res is None:
+        return JSONResponse(status_code=404, content={"error": "account not found or live mode off"})
+    if res.get("error") == "invalid_secret":
+        return JSONResponse(status_code=403, content={"error": "invalid secret"})
+    return res
+
+
+@app.get("/api/accounts/stats")
+async def accounts_stats() -> dict:
+    return await db.count_accounts()
 
 
 # ── WebSocket ─────────────────────────────────────────────────────────────────
