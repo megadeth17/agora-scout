@@ -156,6 +156,7 @@ export default function App() {
           <div className="kpi tod"><span className="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></span><div><div className="v">{kpi(stats?.decisions_today)}</div><div className="l">Today</div></div></div>
         </div>
         <span className="arc-pill"><span className="live-dot" /><span style={{ whiteSpace: 'nowrap' }}>Live on Arc testnet</span></span>
+        <Link to="/manage" className="btn-run" style={{ textDecoration: 'none', background: 'transparent', border: '1px solid var(--cyan)', color: 'var(--cyan)' }}>Manage your USDC →</Link>
         <button type="button" className="btn-run" onClick={runAgent} disabled={running}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>{running ? 'Running…' : 'Run Agent'}
         </button>
