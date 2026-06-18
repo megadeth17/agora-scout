@@ -23,6 +23,12 @@ ARC_VAULT_ADDRESS = os.getenv("ARC_VAULT_ADDRESS", "")
 # The sidecar calls /api/internal/rebalance ONLY after a USDC nanopayment settles.
 INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "")
 
+# Nanopayments: a real sub-cent native-USDC fee paid on Arc per agent action.
+# A client/agent wallet (buyer) pays the platform (seller) per paid rebalance.
+NANOPAY_BUYER_PRIVATE_KEY = os.getenv("NANOPAY_BUYER_PRIVATE_KEY", "")
+NANOPAY_SELLER_ADDRESS = os.getenv("NANOPAY_SELLER_ADDRESS", "")
+NANOPAY_FEE_USDC = float(os.getenv("NANOPAY_FEE_USDC", "0.001"))
+
 # Circle
 CIRCLE_API_KEY = os.getenv("CIRCLE_API_KEY", "")
 CIRCLE_KIT_KEY = os.getenv("CIRCLE_KIT_KEY", "")

@@ -423,6 +423,41 @@ async def internal_rebalance(request: Request) -> dict:
     return {"paid": True, "regime": decision.get("regime"), "rebalance": rebalance}
 
 
+@app.post("/api/pay-rebalance")
+async def pay_rebalance(request: Request) -> dict:
+    """Pay-per-call: a wallet pays a sub-cent USDC nanopayment on Arc, then the
+    agent runs a rebalance cycle. The payment is real on-chain volume (Lepton
+    RFB 02 — selling the agent's work as nanopayments)."""
+    ip = _get_client_ip(request)
+    allowed, retry_after = _check_rate_limit(ip)
+    if not allowed:
+        return JSONResponse(status_code=429,
+                            content={"error": "Too many requests", "retry_after_seconds": retry_after})
+    if not config.NANOPAY_BUYER_PRIVATE_KEY or not config.NANOPAY_SELLER_ADDRESS:
+        return JSONResponse(status_code=503, content={"error": "nanopay not configured"})
+
+    pay = await accounts.pay_nanofee(
+        config.NANOPAY_BUYER_PRIVATE_KEY, config.NANOPAY_SELLER_ADDRESS, config.NANOPAY_FEE_USDC,
+    )
+    if not pay:
+        return JSONResponse(status_code=502, content={"error": "nanopayment failed"})
+
+    await db.save_nanopayment({
+        "payer": pay["payer"], "amount_usdc": pay["amount_usdc"],
+        "tx_hash": pay["tx_hash"], "resource": "/api/pay-rebalance",
+    })
+
+    decision = await agent.run_cycle()
+    current = await db.get_portfolio_state()
+    rebalance = None
+    if decision.get("rebalance_needed"):
+        balance = await executor.get_usdc_balance()
+        rebalance = await executor.execute_rebalance(
+            current=current, target=decision, regime=decision["regime"], total_value=balance,
+        )
+    return {"nanopayment": pay, "regime": decision.get("regime"), "rebalance": rebalance}
+
+
 @app.get("/api/nanopayments")
 async def list_nanopayments(limit: int = 20) -> dict:
     payments = await db.get_nanopayments(limit=limit)

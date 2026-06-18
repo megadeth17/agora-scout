@@ -220,6 +220,38 @@ def _withdraw_sync(row: dict, to_address: str) -> dict:
     return out
 
 
+def _payer_address(from_key: str) -> str:
+    from eth_account import Account
+    return Account.from_key(from_key).address
+
+
+async def pay_nanofee(from_key: str, to_addr: str, amount_usdc: float) -> dict | None:
+    """A real sub-cent native-USDC payment on Arc — the nanopayment itself.
+    Buyer (from_key) pays seller (to_addr). Returns {tx_hash, amount_usdc, payer,
+    arcscan_url} or None. Reuses the proven native-transfer send path."""
+    if not _enabled():
+        return None
+
+    def _do():
+        w3 = _w3()
+        amount_wei = int(amount_usdc * 10 ** USDC_DECIMALS)
+        return _send_sync(w3, from_key, to_addr, amount_wei)
+
+    try:
+        tx = await asyncio.to_thread(_do)
+    except Exception as exc:
+        logger.error("nanofee payment failed: %s", exc)
+        return None
+    if not tx:
+        return None
+    return {
+        "tx_hash": tx,
+        "amount_usdc": amount_usdc,
+        "payer": _payer_address(from_key),
+        "arcscan_url": f"{config.ARCSCAN_TX_BASE}/{tx}",
+    }
+
+
 async def withdraw(account_id: int, to_address: str, secret: str = "") -> dict | None:
     """Send the account's full cash + yield balance to a user-specified address.
     Requires the account's secret (bearer) so only the owner can withdraw."""

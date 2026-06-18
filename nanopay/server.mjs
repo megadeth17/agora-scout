@@ -121,9 +121,23 @@ function withGateway(handler, price, endpoint) {
         Buffer.from(paymentSignature, "base64").toString("utf-8"),
       );
 
-      const verifyResult = await facilitator.verify(paymentPayload, requirements);
+      // The client signs validBefore = now + maxTimeoutSeconds, but a few seconds
+      // elapse before this verify runs, so validBefore - now drops just under
+      // maxTimeoutSeconds and the facilitator rejects it as
+      // "authorization_validity_too_short". We advertise the full window in the
+      // 402 (so the client signs a generous authorization) but verify+settle
+      // against a relaxed window to absorb that elapsed-time gap.
+      const verifyReq = {
+        ...requirements,
+        maxTimeoutSeconds: Math.max(60, requirements.maxTimeoutSeconds - 300),
+      };
+
+      const verifyResult = await facilitator.verify(paymentPayload, verifyReq);
 
       if (!verifyResult.isValid) {
+        console.error(
+          `[x402] Verify FAILED for ${endpoint}: reason=${verifyResult.invalidReason} payer=${verifyResult.payer ?? "?"}`,
+        );
         res.status(402).json({
           error: "Payment verification failed",
           reason: verifyResult.invalidReason,
@@ -131,7 +145,7 @@ function withGateway(handler, price, endpoint) {
         return;
       }
 
-      const settleResult = await facilitator.settle(paymentPayload, requirements);
+      const settleResult = await facilitator.settle(paymentPayload, verifyReq);
 
       if (!settleResult.success) {
         console.error(

@@ -124,6 +124,25 @@ export default function App() {
     } finally { setRunning(false); }
   }, [running, regime, refetch]);
 
+  // Pay-per-call: a real sub-cent USDC nanopayment on Arc triggers the agent.
+  const payRun = useCallback(async () => {
+    if (running) return;
+    setRunning(true);
+    showToast(<><span className="sp" /><span>Paying a nanopayment on Arc…</span></>, 12000);
+    try {
+      const r = await axios.post(`${API}/api/pay-rebalance`);
+      const np = r.data?.nanopayment;
+      showToast(
+        <><span style={{ color: 'var(--gold)' }}>◎</span><span>Paid <b className="mono">{np?.amount_usdc} USDC</b> nanopayment, agent ran. {np?.arcscan_url && <a href={np.arcscan_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cyan)' }}>Arcscan ↗</a>}</span></>,
+        6000,
+      );
+      await refetch();
+    } catch (e) {
+      const wait = e?.response?.data?.retry_after_seconds;
+      showToast(<><span style={{ color: 'var(--gold)' }}>•</span><span>{wait ? `Easy — try again in ${wait}s.` : 'Could not pay right now.'}</span></>, 3200);
+    } finally { setRunning(false); }
+  }, [running, refetch]);
+
   const verify = async () => {
     if (!anchored || vState === 'loading') return;
     setVState('loading'); setVData(null);
@@ -157,6 +176,7 @@ export default function App() {
         </div>
         <span className="arc-pill"><span className="live-dot" /><span style={{ whiteSpace: 'nowrap' }}>Live on Arc testnet</span></span>
         <Link to="/manage" className="btn-run" style={{ textDecoration: 'none', background: 'transparent', border: '1px solid var(--cyan)', color: 'var(--cyan)' }}>Manage your USDC →</Link>
+        <button type="button" className="btn-run" onClick={payRun} disabled={running} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)' }} title="Pay a real sub-cent USDC nanopayment on Arc to run the agent">Pay &amp; run · ◎0.001</button>
         <button type="button" className="btn-run" onClick={runAgent} disabled={running}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>{running ? 'Running…' : 'Run Agent'}
         </button>
@@ -307,6 +327,7 @@ export default function App() {
             <span><b style={{ color: 'var(--text)' }}>{traction?.total_rebalances ?? '—'}</b> rebalances</span><span className="sep">·</span>
             <span className="on">{traction?.onchain_anchored ?? '—'} anchored on Arc</span><span className="sep">·</span>
             <span><b style={{ color: 'var(--cyan)' }}>{traction?.total_accounts ?? '—'}</b> treasuries managed</span><span className="sep">·</span>
+            <span><b style={{ color: 'var(--gold)' }}>{traction?.total_nanopayments ?? '—'}</b> nanopayments · {traction?.nanopayment_volume_usdc ?? 0} USDC</span><span className="sep">·</span>
             <span className="grad">Agora Agents Hackathon 2026</span>
           </div>
         </main>
