@@ -19,6 +19,10 @@ EXECUTION_MODE = os.getenv("EXECUTION_MODE", "simulate").strip().lower()
 ARC_VAULT_PRIVATE_KEY = os.getenv("ARC_VAULT_PRIVATE_KEY", "")
 ARC_VAULT_ADDRESS = os.getenv("ARC_VAULT_ADDRESS", "")
 
+# Shared secret between the x402 nanopayment sidecar and the internal trigger.
+# The sidecar calls /api/internal/rebalance ONLY after a USDC nanopayment settles.
+INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "")
+
 # Circle
 CIRCLE_API_KEY = os.getenv("CIRCLE_API_KEY", "")
 CIRCLE_KIT_KEY = os.getenv("CIRCLE_KIT_KEY", "")

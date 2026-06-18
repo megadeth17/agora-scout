@@ -387,6 +387,53 @@ async def accounts_stats() -> dict:
     return await db.count_accounts()
 
 
+# ── x402 nanopayments (called by the payment sidecar after settlement) ─────────
+
+@app.post("/api/internal/rebalance")
+async def internal_rebalance(request: Request) -> dict:
+    """Run an agent cycle after a USDC nanopayment settles on Arc via x402.
+    Called ONLY by the payment sidecar (gated by X-Internal-Secret); no rate limit.
+    The sidecar passes the settled payment so it's recorded as flowing volume."""
+    if not config.INTERNAL_SECRET or request.headers.get("X-Internal-Secret") != config.INTERNAL_SECRET:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    # Record the nanopayment that paid for this call (the traction metric).
+    amount = body.get("amount_usdc")
+    tx_hash = body.get("tx_hash", "")
+    if amount is not None or tx_hash:
+        await db.save_nanopayment({
+            "payer": body.get("payer", ""),
+            "amount_usdc": amount,
+            "tx_hash": tx_hash,
+            "resource": body.get("resource", "/paid/rebalance"),
+        })
+
+    decision = await agent.run_cycle()
+    current = await db.get_portfolio_state()
+    rebalance = None
+    if decision.get("rebalance_needed"):
+        balance = await executor.get_usdc_balance()
+        rebalance = await executor.execute_rebalance(
+            current=current, target=decision, regime=decision["regime"], total_value=balance,
+        )
+    return {"paid": True, "regime": decision.get("regime"), "rebalance": rebalance}
+
+
+@app.get("/api/nanopayments")
+async def list_nanopayments(limit: int = 20) -> dict:
+    payments = await db.get_nanopayments(limit=limit)
+    return {"nanopayments": payments, "count": len(payments)}
+
+
+@app.get("/api/nanopayments/stats")
+async def nanopayments_stats() -> dict:
+    return await db.count_nanopayments()
+
+
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 @app.websocket("/ws/feed")

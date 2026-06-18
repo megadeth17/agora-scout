@@ -99,6 +99,18 @@ CREATE TABLE IF NOT EXISTS account_rebalances (
 )
 """
 
+# x402 nanopayments settled on Arc (USDC paid per agent action via Circle Gateway).
+CREATE_NANOPAYMENTS = """
+CREATE TABLE IF NOT EXISTS nanopayments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payer TEXT,
+    amount_usdc REAL,
+    tx_hash TEXT,
+    resource TEXT,
+    settled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 
 async def init_db() -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
@@ -108,6 +120,7 @@ async def init_db() -> None:
         await db.execute(CREATE_VISITORS)
         await db.execute(CREATE_ACCOUNTS)
         await db.execute(CREATE_ACCOUNT_REBALANCES)
+        await db.execute(CREATE_NANOPAYMENTS)
         # Apply idempotent migrations (ignore "duplicate column" on existing DBs)
         for migration in REBALANCE_MIGRATIONS:
             try:
@@ -307,6 +320,46 @@ async def get_account_rebalances(account_id: int, limit: int = 20) -> list:
         return out
 
 
+async def save_nanopayment(np: dict) -> int:
+    async with aiosqlite.connect(DATABASE_PATH, timeout=30.0) as db:
+        await db.execute("PRAGMA busy_timeout=30000")
+        cursor = await db.execute(
+            """INSERT INTO nanopayments (payer, amount_usdc, tx_hash, resource, settled_at)
+               VALUES (:payer, :amount_usdc, :tx_hash, :resource, :settled_at)""",
+            {
+                "payer": np.get("payer", ""),
+                "amount_usdc": np.get("amount_usdc"),
+                "tx_hash": np.get("tx_hash", ""),
+                "resource": np.get("resource", ""),
+                "settled_at": datetime.utcnow().isoformat(),
+            },
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_nanopayments(limit: int = 20) -> list:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM nanopayments ORDER BY id DESC LIMIT ?", (limit,)
+        )
+        from config import ARCSCAN_TX_BASE
+        out = []
+        for r in await cursor.fetchall():
+            d = dict(r)
+            d["arcscan_url"] = f"{ARCSCAN_TX_BASE}/{d['tx_hash']}" if d.get("tx_hash") else None
+            out.append(d)
+        return out
+
+
+async def count_nanopayments() -> dict:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        n = (await (await db.execute("SELECT COUNT(*) FROM nanopayments")).fetchone())[0]
+        vol = (await (await db.execute("SELECT COALESCE(SUM(amount_usdc),0) FROM nanopayments")).fetchone())[0]
+        return {"total_nanopayments": n, "nanopayment_volume_usdc": round(vol or 0, 6)}
+
+
 async def count_accounts() -> dict:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         n = (await (await db.execute("SELECT COUNT(*) FROM accounts")).fetchone())[0]
@@ -352,6 +405,12 @@ async def get_traction() -> dict:
         cursor = await db.execute("SELECT COUNT(*) FROM account_rebalances")
         total_account_rebalances = (await cursor.fetchone())[0]
 
+        cursor = await db.execute("SELECT COUNT(*) FROM nanopayments")
+        total_nanopayments = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COALESCE(SUM(amount_usdc),0) FROM nanopayments")
+        nanopayment_volume = (await cursor.fetchone())[0] or 0
+
     return {
         "total_page_views": total_views,
         "unique_visitors": unique_visitors,
@@ -363,6 +422,8 @@ async def get_traction() -> dict:
         "total_manual_triggers": total_triggers,
         "total_accounts": total_accounts,
         "total_account_rebalances": total_account_rebalances,
+        "total_nanopayments": total_nanopayments,
+        "nanopayment_volume_usdc": round(nanopayment_volume, 6),
     }
 
 
