@@ -368,6 +368,20 @@ async def withdraw_account(account_id: int, request: Request) -> dict:
     return res
 
 
+@app.post("/api/account/{account_id}/rebalance")
+async def rebalance_account_now(account_id: int) -> dict:
+    """On-demand rebalance of a user account toward the current regime target.
+    Self-limiting: once at target the move is dust-skipped (no tx, no gas), so it
+    needs no rate limit or secret — spamming it does nothing after the first move."""
+    decisions = await db.get_regime_decisions(limit=1)
+    yield_pct = (decisions[0].get("recommended_yield_pct") if decisions else 20) or 20
+    res = await accounts.rebalance_account(account_id, yield_pct)
+    if res is None:
+        return {"moved": False, "target_yield_pct": yield_pct,
+                "note": "already balanced or live mode off"}
+    return {"moved": True, "target_yield_pct": yield_pct, **res}
+
+
 @app.get("/api/accounts/stats")
 async def accounts_stats() -> dict:
     return await db.count_accounts()

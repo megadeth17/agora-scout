@@ -62,6 +62,21 @@ export default function Manage() {
     setCopied(what); setTimeout(() => setCopied(''), 1500);
   };
 
+  const rebalanceNow = async () => {
+    setBusy(true); setMsg(null);
+    try {
+      const r = await axios.post(`${API}/api/account/${acct.id}/rebalance`);
+      if (r.data?.moved) {
+        const where = r.data.direction === 'cash->yield' ? 'yield' : 'safe';
+        setMsg(`Agent moved ${Number(r.data.amount_usdc).toFixed(2)} USDC to ${where}. Check the activity below.`);
+      } else {
+        setMsg('Already balanced for the current market read.');
+      }
+      setTimeout(() => refresh(acct.id), 1800);
+    } catch { setMsg('Could not rebalance right now.'); }
+    finally { setBusy(false); }
+  };
+
   const doWithdraw = async () => {
     if (!withdrawTo.trim()) { setMsg('Enter a destination address.'); return; }
     setBusy(true); setMsg(null);
@@ -153,6 +168,12 @@ export default function Manage() {
                 <span><Dot c={C.cyan} /> Safe (cash) <b>${usd(cash)}</b></span>
                 <span><b>${usd(yld)}</b> Yield <Dot c={C.gold} /> <span style={{ color: C.faint }}>({yldPct}%)</span></span>
               </div>
+              {state?.funded && (
+                <button onClick={rebalanceNow} disabled={busy} style={{ ...btn(C.gold), marginTop: 16, width: '100%' }}>
+                  {busy ? 'Agent working…' : 'Rebalance now'}
+                </button>
+              )}
+              {state?.funded && <div style={{ fontSize: 12, color: '#5a6678', marginTop: 8 }}>The agent also rebalances on its own every cycle — this just triggers it instantly.</div>}
             </div>
 
             {/* activity */}
